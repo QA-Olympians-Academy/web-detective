@@ -1,13 +1,11 @@
 {
   "compilerOptions": {
-    "ignoreDeprecations": "6.0",
-    "baseUrl": ".",
     "paths": {
       "@pages/*": [
-        "tests/pages/*"
+        "./tests/pages/*"
       ],
       "@fixtures": [
-        "tests/fixtures/index"
+        "./tests/fixtures/index"
       ]
     },
     "target": "ES2020",

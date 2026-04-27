@@ -1,0 +1,142 @@
+# CH7 — AGENTIC TEST EXECUTION IN CI/CD
+#
+# Runs three test layers on every push and PR:
+#   1. Standard Playwright suite (fast, deterministic)
+#   2. Agentic full-flow verification (Claude-driven, requires API key)
+#   3. Self-healing check (detect and report broken locators)
+#
+# The agentic job only runs on push to main (not every PR) to manage API cost.
+
+name: CI — Web Detective
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+
+  # ── Job 1: Standard Playwright tests ──────────────────────────────────────
+  playwright:
+    name: Playwright Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium --with-deps
+
+      - name: Start dev server
+        run: npm run dev &
+        env:
+          NODE_ENV: test
+
+      - name: Wait for server
+        run: npx wait-on http://localhost:5173 --timeout 30000
+
+      - name: Run Playwright tests
+        run: npx playwright test --reporter=list,html
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
+  # ── Job 2: Agentic verification (main branch only) ─────────────────────────
+  agentic:
+    name: Agentic Verification
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    needs: playwright            # only run if standard tests pass
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium --with-deps
+
+      - name: Start dev server
+        run: npm run dev &
+
+      - name: Wait for server
+        run: npx wait-on http://localhost:5173 --timeout 30000
+
+      - name: Run agentic verification
+        run: npx ts-node examples/ch5-custom-agent/agent.ts
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+      - name: Upload agent decision log
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: agent-decision-log
+          path: traces/
+          retention-days: 14
+
+  # ── Job 3: Locator health check ────────────────────────────────────────────
+  locator-health:
+    name: Locator Health Check
+    runs-on: ubuntu-latest
+    needs: playwright
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium --with-deps
+
+      - name: Start dev server
+        run: npm run dev &
+
+      - name: Wait for server
+        run: npx wait-on http://localhost:5173 --timeout 30000
+
+      - name: Verify locator memory is up to date
+        run: |
+          npx ts-node -e "
+            import { LocatorStore, WEB_DETECTIVE_LOCATORS } from './examples/ch4-self-healing/locator-store.js'
+            const store = new LocatorStore('./locator-memory.json')
+            for (const [key, selector] of WEB_DETECTIVE_LOCATORS) store.register(key, selector)
+            store.printReport()
+          "
+
+      - name: Upload locator memory
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: locator-memory
+          path: locator-memory.json
+          retention-days: 30

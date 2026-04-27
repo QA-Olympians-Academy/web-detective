@@ -1,35 +1,33 @@
 # web-detective
 
-A React + TypeScript ecommerce app with login and a sales/revenue dashboard.
+A React + TypeScript ecommerce app used as the target application for the
+**"Rise of the Web Agents"** workshop — an 8-hour tutorial on agentic test automation.
 
-## Prerequisites
+---
 
-- Node.js 18+
-- npm 9+
-
-## Getting Started
+## Quick Start
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open [http://localhost:5173](http://localhost:5173) in your browser.
+Open [http://localhost:5173](http://localhost:5173) and log in with:
 
-**Demo credentials**
+| Field    | Value          |
+|----------|----------------|
+| Email    | admin@shop.com |
+| Password | password123    |
 
-| Field    | Value               |
-|----------|---------------------|
-| Email    | admin@shop.com      |
-| Password | password123         |
+---
 
-## Pages
+## App Pages
 
-| Route        | Description                                  |
-|--------------|----------------------------------------------|
-| `/login`     | Login form (redirects to dashboard on auth)  |
+| Route        | Description                                             |
+|--------------|---------------------------------------------------------|
+| `/login`     | Login form — redirects to dashboard when authenticated  |
 | `/dashboard` | Stat cards, monthly sales bar chart, revenue line chart |
-| `/products`  | Product list with live search and stock badges |
+| `/products`  | Product list with live search and stock status badges   |
 
 ## Scripts
 
@@ -39,9 +37,267 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 | `npm run build`   | Type-check + production build      |
 | `npm run preview` | Serve the production build locally |
 
+---
+
+## Workshop Chapters
+
+Each chapter has runnable examples under `examples/`. Start the dev server first:
+
+```bash
+npm run dev
+```
+
+---
+
+### Ch1 — Foundations of Agentic Automation
+
+**Files:** [examples/ch1-foundations/](examples/ch1-foundations/)
+
+Run the brittle test to see it pass, then intentionally break a selector to see it fail for the wrong reason:
+
+```bash
+# Run the anti-pattern test
+npx playwright test examples/ch1-foundations/brittle-test.spec.ts --headed
+
+# Inspect the typed task graph structure
+npx ts-node -e "import { describeGraph, loginTaskGraph } from './examples/ch1-foundations/task-graph.ts'; describeGraph(loginTaskGraph)"
+```
+
+---
+
+### Ch2 — WebdriverIO & Playwright as the Execution Layer
+
+**Files:** [examples/ch2-execution-layer/](examples/ch2-execution-layer/)
+
+```bash
+# Annotated CLI cheatsheet — read and follow along
+cat examples/ch2-execution-layer/cli-examples.sh
+
+# Launch Playwright Codegen against the app
+npx playwright codegen http://localhost:5173
+
+# Run the full suite in interactive UI mode
+npx playwright test --ui
+
+# Step through a failing test with the Inspector
+PWDEBUG=1 npx playwright test tests/auth.spec.ts --project=chromium
+
+# Open the last HTML report
+npx playwright show-report
+```
+
+The `ActionWrapper` and `BrowserSession` classes are imported by later chapters — explore them directly:
+
+```bash
+npx ts-node examples/ch2-execution-layer/action-wrapper.ts
+npx ts-node examples/ch2-execution-layer/browser-session.ts
+```
+
+---
+
+### Ch3 — Build Your Own MCP Server
+
+**Files:** [examples/ch3-mcp/](examples/ch3-mcp/)
+
+**Option A — Custom MCP server** (built from scratch in the workshop):
+
+```bash
+# Install the MCP SDK
+npm install @modelcontextprotocol/sdk
+
+# Start the server (communicates over stdio)
+npx ts-node examples/ch3-mcp/server.ts
+```
+
+Register it in Claude Code (`.claude/settings.json`):
+
+```json
+{
+  "mcpServers": {
+    "web-detective": {
+      "command": "npx",
+      "args": ["ts-node", "examples/ch3-mcp/server.ts"]
+    }
+  }
+}
+```
+
+**Option B — Official `@playwright/mcp`** (zero config):
+
+```bash
+npx @playwright/mcp@latest
+```
+
+Register in Claude Code:
+
+```json
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": ["@playwright/mcp@latest"]
+    }
+  }
+}
+```
+
+Then prompt your AI client:
+> "Log in to http://localhost:5173 with admin@shop.com / password123 and confirm the dashboard loads."
+
+See [examples/ch3-mcp/playwright-mcp-client.ts](examples/ch3-mcp/playwright-mcp-client.ts) for the full tool surface and snapshot vs vision mode comparison.
+
+---
+
+### Ch4 — Self-Healing Selectors
+
+**Files:** [examples/ch4-self-healing/](examples/ch4-self-healing/)
+
+```bash
+# Seed the locator store with the app's default selectors
+npx ts-node -e "
+import { LocatorStore, WEB_DETECTIVE_LOCATORS } from './examples/ch4-self-healing/locator-store.ts'
+const store = new LocatorStore('./locator-memory.json')
+for (const [key, selector] of WEB_DETECTIVE_LOCATORS) store.register(key, selector)
+store.printReport()
+"
+```
+
+To trigger healing, break a selector and run the healer:
+
+```bash
+# 1. Edit src/pages/Login.tsx — rename className="login-card" to "auth-card"
+# 2. Rebuild
+npm run build
+
+# 3. Run the self-healer (requires ANTHROPIC_API_KEY)
+ANTHROPIC_API_KEY=sk-... npx ts-node -e "
+import { chromium } from 'playwright'
+import { LocatorStore } from './examples/ch4-self-healing/locator-store.ts'
+import { SelfHealingAgent } from './examples/ch4-self-healing/self-healer.ts'
+
+const store = new LocatorStore('./locator-memory.json')
+const healer = new SelfHealingAgent(store, process.env.ANTHROPIC_API_KEY)
+const browser = await chromium.launch({ headless: true })
+const page = await (await browser.newContext({ baseURL: 'http://localhost:5173' })).newPage()
+await page.goto('/login')
+const selector = await healer.findElement(page, 'login.emailInput')
+console.log('Healed selector:', selector)
+store.printReport()
+await browser.close()
+"
+```
+
+Use the `/pw-self-heal` skill inside Claude Code for an interactive healing session.
+
+---
+
+### Ch5 — Building Your Own Custom AI Agent
+
+**Files:** [examples/ch5-custom-agent/](examples/ch5-custom-agent/)
+
+Requires an Anthropic API key:
+
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...
+
+# Install the Anthropic SDK if not already present
+npm install @anthropic-ai/sdk
+
+# Run the full e-commerce verification agent
+npx ts-node examples/ch5-custom-agent/agent.ts
+```
+
+The agent will:
+1. Navigate to the app
+2. Log in with demo credentials
+3. Verify the dashboard and all stat cards
+4. Navigate to Products, search, and clear search
+5. Log out
+6. Print a structured pass/fail summary
+
+To run a specific task instead of the full flow, edit the last lines of `agent.ts`:
+
+```typescript
+// Single task examples:
+agent.run(tasks.loginFlow())
+agent.run(tasks.authRedirect())
+agent.run(tasks.productSearch('Electronics', 6))
+```
+
+---
+
+### Ch6 — Creating Effective Testing Skills
+
+Skills live in [.claude/skills/](/.claude/skills/) and are invoked inside Claude Code:
+
+| Skill | Command | What it does |
+|-------|---------|--------------|
+| Run tests | `/pw-run` | Full suite or filtered subset with failure diagnosis |
+| Run tests (filtered) | `/pw-run auth` | Filter by file name or test title |
+| Debug a failure | `/pw-debug "logs out"` | Headed run + trace + root cause analysis |
+| Scaffold new spec | `/pw-new-test checkout flow` | Creates spec + page object, runs until green |
+| Generate page object | `/pw-page-object Checkout /checkout` | Reads React source, generates typed PO |
+| Heal broken locators | `/pw-self-heal` | Detects broken selectors, proposes LLM-ranked replacements |
+
+---
+
+### Ch7 — Autonomous Test Execution & CI/CD
+
+**File:** [.github/workflows/agentic-tests.yml](.github/workflows/agentic-tests.yml)
+
+The pipeline runs three jobs automatically on push to `main`:
+
+| Job | Trigger | What runs |
+|-----|---------|-----------|
+| `playwright` | Every push/PR | Full Playwright suite |
+| `agentic` | Push to `main` only | Ch5 agent against the live app |
+| `locator-health` | Every push/PR | Verifies locator memory is current |
+
+To enable the agentic job, add your API key as a GitHub secret:
+
+```
+Settings → Secrets → Actions → New secret
+Name: ANTHROPIC_API_KEY
+Value: sk-ant-...
+```
+
+---
+
+## Project Structure
+
+```
+web-detective/
+├── src/                        # React app (the system under test)
+│   ├── pages/                  # Login, Dashboard, Products
+│   ├── components/             # Navbar, PrivateRoute
+│   └── context/AuthContext.tsx
+├── tests/                      # Playwright test suite
+│   ├── fixtures/index.ts       # Custom test + authenticated fixture
+│   ├── pages/                  # Page objects (LoginPage, etc.)
+│   ├── auth.spec.ts
+│   ├── dashboard.spec.ts
+│   └── products.spec.ts
+├── examples/                   # Workshop chapter examples
+│   ├── ch1-foundations/
+│   ├── ch2-execution-layer/
+│   ├── ch3-mcp/
+│   ├── ch4-self-healing/
+│   └── ch5-custom-agent/
+├── .claude/skills/             # Claude Code custom slash commands
+│   ├── pw-run/
+│   ├── pw-debug/
+│   ├── pw-new-test/
+│   ├── pw-page-object/
+│   └── pw-self-heal/
+└── .github/workflows/
+    └── agentic-tests.yml
+```
+
 ## Stack
 
-- **React 18** + **TypeScript**
-- **Vite 5** — dev server & bundler
+- **React 18** + **TypeScript** + **Vite 5**
 - **React Router v6** — client-side routing
 - **Recharts** — bar and line charts
+- **Playwright** — test suite + execution layer + MCP server
+- **Anthropic SDK** — LLM reasoning in Ch4 (self-healing) and Ch5 (custom agent)
+- **@modelcontextprotocol/sdk** — custom MCP server in Ch3

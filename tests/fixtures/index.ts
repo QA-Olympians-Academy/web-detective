@@ -1,8 +1,8 @@
 import { test as base, expect } from '@playwright/test'
-import { LoginPage } from '../pages/LoginPage'
-import { DashboardPage } from '../pages/DashboardPage'
-import { ProductsPage } from '../pages/ProductsPage'
-import { NavbarComponent } from '../pages/NavbarComponent'
+import { LoginPage } from '@pages/LoginPage'
+import { DashboardPage } from '@pages/DashboardPage'
+import { ProductsPage } from '@pages/ProductsPage'
+import { NavbarComponent } from '@pages/NavbarComponent'
 
 const DEMO_EMAIL    = 'admin@shop.com'
 const DEMO_PASSWORD = 'password123'

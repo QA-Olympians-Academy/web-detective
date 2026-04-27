@@ -60,6 +60,11 @@ Make sure the following are installed before arriving:
 - Map the test steps to an agentic task graph
 - Discuss: where does human judgement still live?
 
+**Questions**
+1. The brittle test uses `await page.waitForTimeout(2000)` — what specific problem does this mask, and what should replace it?
+2. Which of the five agentic phases (observe / plan / act / verify / learn) is absent from a traditional Playwright test, and why does its absence matter?
+3. `loginTaskGraph` has three tasks with preconditions. What happens if `submitCredentials` runs before `navigateToLogin` completes — and how does the task graph prevent it?
+
 ---
 
 ### ☕ 10:45 – 11:00 · Break *(15 min)*
@@ -96,6 +101,11 @@ Make sure the following are installed before arriving:
 - Break a test intentionally; use `--debug` and the Inspector to trace the failure
 - Open a trace file in `show-trace` and correlate a failed assertion with a DOM snapshot
 
+**Questions**
+1. `ActionWrapper.snapshot()` returns both the accessibility tree and a screenshot. When would an LLM need the screenshot and when is the a11y tree alone sufficient?
+2. `navigateWithRetry` multiplies the delay by the attempt number (`retryDelayMs * attempt`). Is this true exponential back-off? What would genuine exponential back-off look like and when would you prefer it?
+3. The `ActionResult` interface captures `durationMs` for every action. Name two concrete ways an agent could use this timing data to improve future runs.
+
 ---
 
 ### 🍽️ 12:30 – 13:15 · Lunch *(45 min)*
@@ -128,6 +138,11 @@ Make sure the following are installed before arriving:
 - Drive the demo app using plain English: "Log in with admin credentials and verify the dashboard loads"
 - Compare: hand-written Playwright test vs. the same assertion driven through MCP
 
+**Questions**
+1. The custom MCP server keeps a single shared `AgentBrowserSession` across all tool calls. What breaks if two AI clients connect simultaneously, and how would you fix it?
+2. `browser_snapshot` returns an accessibility tree while `browser_screenshot` returns a PNG. For a products-table assertion (count rows, read cell values), which tool is faster and cheaper — and why?
+3. A tool schema marks `selector` as `required` for `browser_click`. What error would the MCP server return if the LLM omits it, and where in the server code does that validation happen?
+
 ---
 
 ### 14:15 – 15:15 · Chapter 4 — Self-Healing Selectors *(60 min)*
@@ -144,6 +159,11 @@ Make sure the following are installed before arriving:
 - Watch the self-healing agent detect and repair them in real time
 - Review and commit the locator memory file
 - Discuss: when to trust auto-healed selectors vs. when to review manually
+
+**Questions**
+1. `LocatorStore.heal()` promotes the new selector to primary and demotes the old one to `fallbacks`. When should the healer try the fallbacks before asking the LLM for new candidates?
+2. The LLM prompt asks for "3-5 alternative selectors ordered by stability". What makes a selector *stable* and how could you score stability without running the tests?
+3. `healCount` tracks how many times a locator has been replaced. At what threshold would you flag a locator for manual review instead of auto-healing it again?
 
 ---
 
@@ -164,6 +184,11 @@ Make sure the following are installed before arriving:
 - Wire it to the WebdriverIO / Playwright execution layer from Chapter 2
 - Run a multi-step e-commerce scenario (login → search → checkout → confirm) driven entirely by the agent
 - Tune the system prompt to fix a hallucination or off-track navigation
+
+**Questions**
+1. The system prompt says "Always call `snapshot()` first to understand page state — never guess selectors." What failure mode does this guard against, and what would you observe in the tool call log if the agent ignored this rule?
+2. `done()` is a regular tool in the registry rather than a hard loop exit. What is the advantage of this design, and what would break if you replaced it with a simple `return` from inside `loop()`?
+3. The agent uses prompt caching by setting `cache_control: { type: "ephemeral" }` on the system prompt. In a 12-turn run that costs $0.10 without caching, what saving would you expect if the cached portion is 80% of the prompt tokens and Claude's cache read discount is 90%?
 
 ---
 
@@ -198,6 +223,11 @@ Make sure the following are installed before arriving:
 - Write a `new-test` skill that enforces the project's fixture and page-object conventions
 - Invoke both skills against a deliberately broken test and validate the output
 - Discuss: how to version-control skills alongside tests so they stay in sync
+
+**Questions**
+1. The `/pw-debug` skill injects live test output via `` !`npx playwright test --reporter=line` `` before the LLM sees the prompt. Why does running the tests inside the skill (rather than pasting output manually) produce better diagnoses?
+2. `allowed-tools` in a skill's frontmatter restricts which tools the agent may call. What is the security and correctness argument for limiting `/pw-new-test` to only `Read`, `Edit`, `Write`, and `Bash`?
+3. A skill with no `argument-hint` field still works when invoked with an argument. What is the purpose of `argument-hint` then, and who benefits from it?
 
 ---
 
@@ -248,6 +278,11 @@ playwright (every push/PR)
 - Open the Step Summary tab — inspect the Markdown table of scenario results
 - Download the `agent-report-login-flow` artifact and inspect the JSON
 - Deliberately break a selector and re-push: observe the `::error` annotation appear in the PR diff
+
+**Questions**
+1. The pipeline uses `fail-fast: false` on the agentic matrix. Under what circumstances would you change this to `fail-fast: true`, and what is the cost of doing so?
+2. `CIReporter.annotation()` emits `::error` for critical failures and `::warning` for non-critical ones. GitHub renders these annotations inline in PR diffs. Why would a `::notice` annotation be a poor choice for a broken selector?
+3. The agent matrix only runs on `main`, while standard Playwright tests run on every push and PR. What is the tradeoff this architecture makes, and how would you structure a middle ground (e.g. run agents on PRs to `main` only)?
 
 ---
 

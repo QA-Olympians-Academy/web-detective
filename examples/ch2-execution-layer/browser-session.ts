@@ -9,6 +9,7 @@
  *   • Structured logging of every browser event for LLM reasoning
  *   • Graceful teardown that saves a trace even on crash
  */
+/// <reference types="node" />
 import { chromium, type Browser, type BrowserContext, type Page } from 'playwright'
 import * as path from 'path'
 import * as fs from 'fs'

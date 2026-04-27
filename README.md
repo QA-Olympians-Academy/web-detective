@@ -63,6 +63,12 @@ npx playwright test examples/ch1-foundations/brittle-test.spec.ts --headed
 npx ts-node -e "import { describeGraph, loginTaskGraph } from './examples/ch1-foundations/task-graph.ts'; describeGraph(loginTaskGraph)"
 ```
 
+**Exercises**
+
+1. Open [examples/ch1-foundations/brittle-test.spec.ts](examples/ch1-foundations/brittle-test.spec.ts) and fix every anti-pattern: replace arbitrary waits with `waitFor` conditions, replace CSS path selectors with ARIA-based ones, and eliminate the hardcoded sleep.
+2. Add a `logoutTask` to `loginTaskGraph` in [examples/ch1-foundations/task-graph.ts](examples/ch1-foundations/task-graph.ts) with `verifyDashboardLoaded` as its precondition and `url === '/login'` as its success criterion.
+3. Extend the `ActionType` enum with `hover` and `wait_for_selector`, then add a `hoverNavMenu` action to the task graph that uses `hover` before clicking a dropdown.
+
 ---
 
 ### Ch2 — WebdriverIO & Playwright as the Execution Layer
@@ -92,6 +98,12 @@ The `ActionWrapper` and `BrowserSession` classes are imported by later chapters 
 npx ts-node examples/ch2-execution-layer/action-wrapper.ts
 npx ts-node examples/ch2-execution-layer/browser-session.ts
 ```
+
+**Exercises**
+
+1. Add a `hover(selector: string): Promise<ActionResult>` method to `ActionWrapper` in [examples/ch2-execution-layer/action-wrapper.ts](examples/ch2-execution-layer/action-wrapper.ts) that follows the same try/catch logging pattern as `click()`.
+2. Extend `navigateWithRetry` in [examples/ch2-execution-layer/browser-session.ts](examples/ch2-execution-layer/browser-session.ts) to distinguish network errors (log `navigate_network_error`) from timeout errors (log `navigate_timeout`) so the LLM can reason about failure causes differently.
+3. Run `npx playwright codegen http://localhost:5173` and record a login flow. Compare the selectors `codegen` chose against the ones in `ActionWrapper.resolveSelector()` — note which are more resilient and why.
 
 ---
 
@@ -146,6 +158,12 @@ Then prompt your AI client:
 
 See [examples/ch3-mcp/playwright-mcp-client.ts](examples/ch3-mcp/playwright-mcp-client.ts) for the full tool surface and snapshot vs vision mode comparison.
 
+**Exercises**
+
+1. Add a `browser_evaluate` tool to [examples/ch3-mcp/server.ts](examples/ch3-mcp/server.ts) that accepts a `script: string` parameter, runs it via `page.evaluate()`, and returns the serialised result. Add the JSON schema and register it in the tool list.
+2. Register the custom server in `.claude/settings.json`, start it, then prompt your AI client: "Count the number of product rows visible on the products page." Verify the count matches what you see in the browser.
+3. Call `browser_snapshot` and `browser_screenshot` on the same page state. Compare token count vs. information density for a table-reading task and document which mode you'd choose for the products page and why.
+
 ---
 
 ### Ch4 — Self-Healing Selectors
@@ -189,6 +207,12 @@ await browser.close()
 
 Use the `/pw-self-heal` skill inside Claude Code for an interactive healing session.
 
+**Exercises**
+
+1. Add a `confidence` field (number, 0–1) to `LocatorEntry` in [examples/ch4-self-healing/locator-store.ts](examples/ch4-self-healing/locator-store.ts). Set it to `1.0` on `register()`, decrease it by `0.2` on each `heal()`, and display it in `printReport()`.
+2. Rename the CSS class `login-card` to `auth-card` in [src/pages/Login.tsx](src/pages/Login.tsx), rebuild (`npm run build`), then run the self-healer and confirm it proposes an ARIA-based replacement that doesn't depend on the class name.
+3. Extend `printReport()` to print a `NEEDS REVIEW` warning next to any locator whose `healCount` is 2 or more, so engineers know which selectors are chronically unstable.
+
 ---
 
 ### Ch5 — Building Your Own Custom AI Agent
@@ -224,6 +248,12 @@ agent.run(tasks.authRedirect())
 agent.run(tasks.productSearch('Electronics', 6))
 ```
 
+**Exercises**
+
+1. Add a `noResultsSearch` task to [examples/ch5-custom-agent/prompts.ts](examples/ch5-custom-agent/prompts.ts) that searches for `"zzz_nonexistent"` and asserts the products table shows zero rows. Run it with `agent.run(tasks.noResultsSearch())`.
+2. Lower `MAX_TURNS` from `15` to `6` in [examples/ch5-custom-agent/agent.ts](examples/ch5-custom-agent/agent.ts) and run `fullEcommerce()`. Observe how the agent handles running out of turns mid-flow — then raise it back and document the minimum turns needed.
+3. Add a `scroll_into_view` tool to the registry in [examples/ch5-custom-agent/tools.ts](examples/ch5-custom-agent/tools.ts) with a `selector` input, wire it to `page.locator(selector).scrollIntoViewIfNeeded()` in `agent.ts`, and update the system prompt to use it before clicking elements that may be off-screen.
+
 ---
 
 ### Ch6 — Creating Effective Testing Skills
@@ -238,6 +268,12 @@ Skills live in [.claude/skills/](/.claude/skills/) and are invoked inside Claude
 | Scaffold new spec | `/pw-new-test checkout flow` | Creates spec + page object, runs until green |
 | Generate page object | `/pw-page-object Checkout /checkout` | Reads React source, generates typed PO |
 | Heal broken locators | `/pw-self-heal` | Detects broken selectors, proposes LLM-ranked replacements |
+
+**Exercises**
+
+1. Write a `/pw-coverage` skill in [.claude/skills/](.claude/skills/) that runs the full test suite and prints a pass-rate breakdown grouped by page object (login, dashboard, products). Use context injection to pull `npx playwright test --reporter=json` output before the LLM summarises it.
+2. Extend the `/pw-debug` skill to also capture browser console errors: inject `` !`npx playwright test "$ARGUMENTS" --reporter=json 2>&1` `` and ask the LLM to correlate JS console errors with test failures.
+3. Add a guard rail to `/pw-new-test` that reads the existing spec files first and refuses to scaffold a test whose `test()` title already exists elsewhere in the suite. Document the `allowed-tools` list your skill needs for this check.
 
 ---
 
@@ -310,6 +346,12 @@ Edit [examples/ch7-agent-ci/scenarios.ts](examples/ch7-agent-ci/scenarios.ts) �
   critical: true,
 }
 ```
+
+**Exercises**
+
+1. Add a `dashboard-charts` scenario (non-critical) to [examples/ch7-agent-ci/scenarios.ts](examples/ch7-agent-ci/scenarios.ts) and a matching `dashboardCharts()` task prompt in [examples/ch7-agent-ci/scenarios.ts](examples/ch7-agent-ci/scenarios.ts). Run it with `--scenario dashboard-charts` and observe the step summary.
+2. Extend `CIReporter.writeStepSummary()` in [examples/ch7-agent-ci/reporter.ts](examples/ch7-agent-ci/reporter.ts) to add a "Zero tool calls" warning row for any scenario where the agent called `done()` on the first turn — this indicates the agent may have short-circuited without actually testing anything.
+3. Modify the workflow in [.github/workflows/ch7-agent-ci.yml](.github/workflows/ch7-agent-ci.yml) to also run the agentic matrix on PRs targeting `main` (not just pushes to `main`), then update the cost-management comment to reflect the new trigger.
 
 ---
 

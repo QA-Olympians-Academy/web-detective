@@ -241,24 +241,74 @@ Skills live in [.claude/skills/](/.claude/skills/) and are invoked inside Claude
 
 ---
 
-### Ch7 — Autonomous Test Execution & CI/CD
+### Ch7 — Implementing an Agent & Running on CI
 
-**File:** [.github/workflows/agentic-tests.yml](.github/workflows/agentic-tests.yml)
+**Files:** [examples/ch7-agent-ci/](examples/ch7-agent-ci/)  
+**Workflow:** [.github/workflows/agentic-tests.yml](.github/workflows/agentic-tests.yml)
 
-The pipeline runs three jobs automatically on push to `main`:
+#### List available scenarios
 
-| Job | Trigger | What runs |
-|-----|---------|-----------|
-| `playwright` | Every push/PR | Full Playwright suite |
-| `agentic` | Push to `main` only | Ch5 agent against the live app |
-| `locator-health` | Every push/PR | Verifies locator memory is current |
+```bash
+npx ts-node examples/ch7-agent-ci/agent-runner.ts --list
+```
 
-To enable the agentic job, add your API key as a GitHub secret:
+#### Run a single scenario locally
+
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...
+
+npx ts-node examples/ch7-agent-ci/agent-runner.ts --scenario login-flow
+npx ts-node examples/ch7-agent-ci/agent-runner.ts --scenario auth-redirect
+npx ts-node examples/ch7-agent-ci/agent-runner.ts --scenario product-search
+npx ts-node examples/ch7-agent-ci/agent-runner.ts --scenario full-ecommerce
+```
+
+#### Run all scenarios sequentially
+
+```bash
+ANTHROPIC_API_KEY=sk-ant-... npx ts-node examples/ch7-agent-ci/agent-runner.ts --all
+```
+
+Each run produces:
+- Console output with per-scenario pass/fail and step count
+- `agent-report.json` — structured JSON report for artifact upload
+- GitHub Actions annotations (`::error` / `::warning`) when run in CI
+- A Markdown step summary table in the Actions UI
+
+#### GitHub Actions workflows
+
+Each chapter has its own workflow file, scoped to its `paths`:
+
+| Workflow | Trigger | What it checks |
+|---|---|---|
+| [ch1-foundations.yml](.github/workflows/ch1-foundations.yml) | `examples/ch1-foundations/**` | Type-check, run brittle test, verify task-graph exports |
+| [ch2-execution-layer.yml](.github/workflows/ch2-execution-layer.yml) | `examples/ch2-execution-layer/**` | Type-check, ActionWrapper live login smoke test |
+| [ch3-mcp.yml](.github/workflows/ch3-mcp.yml) | `examples/ch3-mcp/**` | Type-check, MCP server boot, tool schema count |
+| [ch4-self-healing.yml](.github/workflows/ch4-self-healing.yml) | `examples/ch4-self-healing/**`, `src/**` | Type-check, seed locator store, probe all selectors against live app |
+| [ch5-custom-agent.yml](.github/workflows/ch5-custom-agent.yml) | `examples/ch5-custom-agent/**` | Type-check, tool registry validation, agent run on `main` |
+| [ch6-skills.yml](.github/workflows/ch6-skills.yml) | `.claude/skills/**` | Frontmatter validation, `argument-hint` presence check |
+| [ch7-agent-ci.yml](.github/workflows/ch7-agent-ci.yml) | Every push/PR | Full pipeline: Playwright + agentic matrix + locator health |
+
+#### Enable the agentic jobs (Ch5 + Ch7)
+
+Add your API key as a repository secret:
 
 ```
-Settings → Secrets → Actions → New secret
-Name: ANTHROPIC_API_KEY
+Settings → Secrets and variables → Actions → New repository secret
+Name:  ANTHROPIC_API_KEY
 Value: sk-ant-...
+```
+
+#### Add a new scenario
+
+Edit [examples/ch7-agent-ci/scenarios.ts](examples/ch7-agent-ci/scenarios.ts) — no changes to the workflow YAML needed:
+
+```typescript
+{
+  name: 'checkout-flow',
+  task: tasks.checkoutFlow(),   // add to prompts.ts
+  critical: true,
+}
 ```
 
 ---
@@ -282,7 +332,8 @@ web-detective/
 │   ├── ch2-execution-layer/
 │   ├── ch3-mcp/
 │   ├── ch4-self-healing/
-│   └── ch5-custom-agent/
+│   ├── ch5-custom-agent/
+│   └── ch7-agent-ci/
 ├── .claude/skills/             # Claude Code custom slash commands
 │   ├── pw-run/
 │   ├── pw-debug/
@@ -290,7 +341,13 @@ web-detective/
 │   ├── pw-page-object/
 │   └── pw-self-heal/
 └── .github/workflows/
-    └── agentic-tests.yml
+    ├── ch1-foundations.yml
+    ├── ch2-execution-layer.yml
+    ├── ch3-mcp.yml
+    ├── ch4-self-healing.yml
+    ├── ch5-custom-agent.yml
+    ├── ch6-skills.yml
+    └── ch7-agent-ci.yml
 ```
 
 ## Stack

@@ -1,0 +1,111 @@
+# CH4 — Self-Healing Selectors
+#
+# Validates:
+#   • LocatorStore and SelfHealingAgent type-check cleanly
+#   • Locator store seeds all web-detective entries without error
+#   • All registered selectors are discoverable on their respective pages
+#   • Report is human-readable and complete
+
+name: CH4 — Self-Healing
+
+on:
+  # push:
+  #   branches: [main]
+  #   paths:
+  #     - 'examples/ch4-self-healing/**'
+  #     - 'src/**'               # re-run if app changes break selectors
+  #     - 'tsconfig.examples.json'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'examples/ch4-self-healing/**'
+      - 'src/**'
+      - 'tsconfig.examples.json'
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  type-check:
+    name: Type Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - run: npx tsc --noEmit -p tsconfig.examples.json
+
+  locator-health:
+    name: Locator Health Check
+    runs-on: ubuntu-latest
+    needs: type-check
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install chromium --with-deps
+
+      - name: Start dev server
+        run: npm run dev &
+      - name: Wait for dev server
+        run: npx wait-on http://localhost:5173 --timeout 30000
+
+      - name: Seed locator store and verify all entries
+        run: |
+          npx ts-node -e "
+            const { LocatorStore, WEB_DETECTIVE_LOCATORS } = require('./examples/ch4-self-healing/locator-store')
+            const store = new LocatorStore('./locator-memory.json')
+            for (const [key, selector] of WEB_DETECTIVE_LOCATORS) store.register(key, selector)
+            store.printReport()
+            const healedEntries = store.all().filter(e => e.healCount > 0)
+            if (healedEntries.length > 0) {
+              console.warn('Warning: healed entries found:', healedEntries.map(e => e.key))
+            }
+            console.log('Locator health check passed')
+          "
+
+      - name: Probe selectors against live app
+        run: |
+          npx ts-node -e "
+            const { chromium } = require('playwright')
+            const { LocatorStore, WEB_DETECTIVE_LOCATORS } = require('./examples/ch4-self-healing/locator-store')
+            void (async () => {
+              const store = new LocatorStore('./locator-memory.json')
+              const browser = await chromium.launch({ headless: true })
+              const ctx = await browser.newContext({ baseURL: 'http://localhost:5173' })
+              const page = await ctx.newPage()
+              // Log-in first so nav/dashboard selectors are reachable
+              await page.goto('/login')
+              await page.getByLabel('Email address').fill('admin@shop.com')
+              await page.getByLabel('Password').fill('password123')
+              await page.getByRole('button', { name: 'Sign In' }).click()
+              await page.waitForURL('/dashboard')
+              const broken = []
+              for (const [key, selector] of WEB_DETECTIVE_LOCATORS) {
+                const visible = await page.locator(selector.split(', ')[0]).isVisible().catch(() => false)
+                if (!visible) broken.push(key)
+              }
+              await browser.close()
+              if (broken.length > 0) {
+                console.error('Broken selectors:', broken)
+                process.exit(1)
+              }
+              console.log('All', WEB_DETECTIVE_LOCATORS.length, 'selectors healthy')
+            })()
+          "
+
+      - name: Upload locator memory
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: locator-memory
+          path: locator-memory.json
+          retention-days: 30

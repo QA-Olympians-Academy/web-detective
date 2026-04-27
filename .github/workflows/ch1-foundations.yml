@@ -1,0 +1,71 @@
+# CH1 — Foundations of Agentic Automation
+#
+# Validates:
+#   • TypeScript compiles across all example files
+#   • The brittle test spec can be discovered and executed (it should pass —
+#     it tests the same app as the main suite, just with fragile selectors)
+#   • The task-graph module exports cleanly
+
+name: CH1 — Foundations
+
+on:
+  # push:
+  #   branches: [main]
+  #   paths:
+  #     - 'examples/ch1-foundations/**'
+  #     - 'tsconfig.examples.json'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'examples/ch1-foundations/**'
+      - 'tsconfig.examples.json'
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  type-check:
+    name: Type Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - name: Type-check example files
+        run: npx tsc --noEmit -p tsconfig.examples.json
+
+  brittle-test:
+    name: Brittle Test (anti-pattern reference)
+    runs-on: ubuntu-latest
+    needs: type-check
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install chromium --with-deps
+
+      - name: Start dev server
+        run: npm run dev &
+      - name: Wait for dev server
+        run: npx wait-on http://localhost:5173 --timeout 30000
+
+      - name: Run brittle test
+        # This spec intentionally uses anti-patterns — it should still pass
+        # against the unmodified app. The workshop task is to break it by
+        # renaming a CSS class and watching it fail.
+        run: npx playwright test examples/ch1-foundations/brittle-test.spec.ts --project=chromium --reporter=list
+
+      - name: Verify task-graph exports
+        run: |
+          npx ts-node -e "
+          const { describeGraph, loginTaskGraph } = require('./examples/ch1-foundations/task-graph')
+          describeGraph(loginTaskGraph)
+          "

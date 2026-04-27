@@ -1,0 +1,116 @@
+# CH5 — Building Your Own Custom AI Agent
+#
+# Validates:
+#   • Agent, tools, and prompts modules type-check cleanly
+#   • Agent runs the full e-commerce scenario successfully on main
+#     (gated to main only — each run calls the Anthropic API)
+#
+# Requires secret: ANTHROPIC_API_KEY
+
+name: CH5 — Custom Agent
+
+on:
+  # push:
+  #   branches: [main]
+  #   paths:
+  #     - 'examples/ch5-custom-agent/**'
+  #     - 'src/**'
+  #     - 'tsconfig.examples.json'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'examples/ch5-custom-agent/**'
+      - 'tsconfig.examples.json'
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  type-check:
+    name: Type Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - run: npx tsc --noEmit -p tsconfig.examples.json
+
+  tool-registry:
+    name: Tool Registry Validation
+    runs-on: ubuntu-latest
+    needs: type-check
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+
+      - name: Verify all tools have required fields
+        run: |
+          npx ts-node -e "
+          const { AGENT_TOOLS } = require('./examples/ch5-custom-agent/tools')
+          const missing = AGENT_TOOLS.filter(t => !t.name || !t.description || !t.input_schema)
+          if (missing.length > 0) {
+            console.error('Tools missing required fields:', missing.map(t => t.name))
+            process.exit(1)
+          }
+          console.log('Tool registry OK —', AGENT_TOOLS.length, 'tools registered:')
+          AGENT_TOOLS.forEach(t => console.log(' •', t.name))
+          "
+
+      - name: Verify task prompts are non-empty
+        run: |
+          npx ts-node -e "
+          const { tasks } = require('./examples/ch5-custom-agent/prompts')
+          const checks = [
+            tasks.authRedirect(),
+            tasks.loginFlow(),
+            tasks.productSearch('test', 1),
+            tasks.fullEcommerce(),
+          ]
+          checks.forEach((t, i) => {
+            if (!t || t.trim().length < 20) { console.error('Task', i, 'is too short'); process.exit(1) }
+          })
+          console.log('All', checks.length, 'task prompts look valid')
+          "
+
+  agent-run:
+    name: Agent Smoke Test
+    runs-on: ubuntu-latest
+    needs: type-check
+    # API calls cost money — only run on main branch pushes
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install chromium --with-deps
+
+      - name: Start dev server
+        run: npm run dev &
+      - name: Wait for dev server
+        run: npx wait-on http://localhost:5173 --timeout 30000
+
+      - name: Run full e-commerce agent scenario
+        run: npx ts-node examples/ch5-custom-agent/agent.ts
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+      - name: Upload traces
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ch5-agent-traces
+          path: traces/
+          retention-days: 7

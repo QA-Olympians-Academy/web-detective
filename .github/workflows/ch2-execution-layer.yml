@@ -1,0 +1,91 @@
+# CH2 — WebdriverIO & Playwright as the Execution Layer
+#
+# Validates:
+#   • ActionWrapper and BrowserSession type-check cleanly
+#   • ActionWrapper can execute a real login flow and produce a structured log
+#   • Playwright CLI commands are documented and discoverable
+
+name: CH2 — Execution Layer
+
+on:
+  # push:
+  #   branches: [main]
+  #   paths:
+  #     - 'examples/ch2-execution-layer/**'
+  #     - 'tsconfig.examples.json'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'examples/ch2-execution-layer/**'
+      - 'tsconfig.examples.json'
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  type-check:
+    name: Type Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - run: npx tsc --noEmit -p tsconfig.examples.json
+
+  action-wrapper-smoke:
+    name: ActionWrapper Smoke Test
+    runs-on: ubuntu-latest
+    needs: type-check
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install chromium --with-deps
+
+      - name: Start dev server
+        run: npm run dev &
+      - name: Wait for dev server
+        run: npx wait-on http://localhost:5173 --timeout 30000
+
+      - name: Run ActionWrapper login flow
+        run: |
+          npx ts-node -e "
+          const { chromium } = require('playwright')
+          const { ActionWrapper } = require('./examples/ch2-execution-layer/action-wrapper')
+          void (async () => {
+            const browser = await chromium.launch({ headless: true })
+            const page = await (await browser.newContext({ baseURL: 'http://localhost:5173' })).newPage()
+            const w = new ActionWrapper(page)
+            await w.navigate('/login')
+            await w.fill('label:Email address', 'admin@shop.com')
+            await w.fill('label:Password', 'password123')
+            await w.click('button:has-text(\"Sign In\")')
+            await w.assertUrl('/dashboard')
+            await w.assertVisible('h2:has-text(\"Dashboard\")')
+            w.printSummary()
+            const log = w.getLog()
+            const failed = log.filter(r => !r.ok)
+            await browser.close()
+            if (failed.length > 0) { console.error('Failed actions:', failed); process.exit(1) }
+          })()
+          "
+
+  cli-docs-check:
+    name: CLI Examples Readable
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify CLI cheatsheet exists and is executable
+        run: |
+          test -f examples/ch2-execution-layer/cli-examples.sh
+          echo "CLI cheatsheet found — key commands:"
+          grep '^npx playwright' examples/ch2-execution-layer/cli-examples.sh

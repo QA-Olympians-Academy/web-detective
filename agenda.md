@@ -167,7 +167,7 @@ Make sure the following are installed before arriving:
 
 ---
 
-### 16:15 – 17:00 · Chapter 6 — Creating Effective Testing Skills *(45 min)*
+### 16:15 – 16:45 · Chapter 6 — Creating Effective Testing Skills *(30 min)*
 
 > Skills (also called custom slash commands) are reusable, parameterised prompts that give an AI agent specialised QA behaviour. A well-crafted skill is the difference between an agent that works once and one that works every time.
 
@@ -201,22 +201,57 @@ Make sure the following are installed before arriving:
 
 ---
 
-### 17:00 – 17:30 · Chapter 7 — Autonomous Test Execution & CI/CD *(30 min)*
+### 16:45 – 18:00 · Chapter 7 — Implementing an Agent & Running on CI *(75 min)*
+
+> This chapter takes the agent from Chapter 5 and makes it production-grade: structured output, GitHub Actions annotations, parallel scenario matrix, and artifact-based post-mortem.
 
 **Concepts**
-- Running a complete test scenario from high-level goal descriptions
-- Strategies for repeatability and determinism in agentic tests
-- Logging agent decisions in a human-auditable format
-- Scaling autonomous agents in CI/CD: parallelism, cost, and failure triage
+
+*Making the agent CI-ready*
+- Exit codes as the CI contract: 0 = all critical scenarios passed, 1 = critical failure, 2 = config error
+- Separating scenario definitions from the runner — add tests without touching pipeline YAML
+- The `critical` flag: hard failures vs. warnings that don't block the pipeline
+- GitHub Actions workflow commands: `::error`, `::warning`, `::notice` annotations surfaced inline in PR diffs
+- Writing to `$GITHUB_STEP_SUMMARY` — a Markdown table visible directly in the Actions UI
+- Setting job outputs via `$GITHUB_OUTPUT` for downstream job consumption
+
+*Pipeline architecture*
+```
+playwright (every push/PR)
+    └── agentic matrix (main only, parallel per scenario)
+    │       ├── auth-redirect
+    │       ├── login-flow
+    │       ├── product-search
+    │       └── full-ecommerce
+    └── locator-health (every push/PR)
+```
+- `fail-fast: false` — let all matrix jobs finish even if one fails
+- Artifact upload per scenario: `agent-report.json` + trace zip
+- Cost management: agent matrix gated to `main`; standard Playwright runs on every PR
 
 **Hands-on**
-- Add the agent runner to a GitHub Actions workflow
-- Trigger a run and inspect the structured decision log as a pipeline artifact
-- Review: what passes, what flakes, and what the agent could not handle — and why
+
+*Part A — CI reporter (20 min)*
+- Walk through [examples/ch7-agent-ci/reporter.ts](examples/ch7-agent-ci/reporter.ts)
+- Add a new annotation type and verify it appears locally
+- Inspect how `$GITHUB_STEP_SUMMARY` and `$GITHUB_OUTPUT` are written
+
+*Part B — Scenario runner (25 min)*
+- Run a single scenario with the CLI: `--scenario login-flow`
+- Add a new scenario to [examples/ch7-agent-ci/scenarios.ts](examples/ch7-agent-ci/scenarios.ts) with `critical: false`
+- Run `--all` and observe the per-scenario pass/fail output and JSON report
+- Flip the new scenario's `critical` flag and observe the exit code change
+
+*Part C — GitHub Actions pipeline (30 min)*
+- Walk through [.github/workflows/agentic-tests.yml](.github/workflows/agentic-tests.yml) section by section
+- Push a change to `main` and watch the matrix jobs run in parallel
+- Open the Step Summary tab — inspect the Markdown table of scenario results
+- Download the `agent-report-login-flow` artifact and inspect the JSON
+- Deliberately break a selector and re-push: observe the `::error` annotation appear in the PR diff
 
 ---
 
-### 17:30 – 18:00 · Q&A, Wrap-up & Next Steps *(30 min)*
+### 18:00 – 18:15 · Q&A, Wrap-up & Next Steps *(15 min)*
 
 - Open Q&A
 - Key takeaways and mental model recap
@@ -233,4 +268,5 @@ Make sure the following are installed before arriving:
 3. **MCP is the glue** — `@playwright/mcp` gives any LLM client a standardised way to drive a real browser without custom wrappers.
 4. **Self-healing is a strategy, not a feature** — it requires a locator memory and a review discipline.
 5. **Skills are the unit of reusable agent behaviour** — a well-scoped skill with tight allowed-tools and a clear output contract is more valuable than a clever one-shot prompt.
-6. **CI/CD is the finish line** — an agent that can't run headlessly in a pipeline is a prototype, not a solution.
+6. **Scenarios are the unit of CI coverage** — each agent scenario should have a `critical` flag, a name, and live in a registry separate from the runner code.
+7. **CI/CD is the finish line** — an agent that can't run headlessly in a pipeline, emit structured output, and surface failures as annotations is a prototype, not a solution.

@@ -1,61 +1,49 @@
-# CH7 — FULL AGENTIC CI PIPELINE
+# CH7 — Implementing an Agent & Running on CI
 #
-# Pipeline architecture:
+# Full agentic pipeline with a parallel scenario matrix.
 #
-#   ┌─────────────────┐
-#   │  playwright     │  ← runs on every push/PR (fast, deterministic gate)
-#   └────────┬────────┘
-#            │ needs
-#   ┌─────────▼────────────────────────────────────────────────┐
-#   │  agentic (matrix)                                        │
-#   │  ┌──────────────┐ ┌─────────────┐ ┌──────────────────┐   │
-#   │  │ auth-redirect│ │ login-flow  │ │  product-search  │   │  ← parallel
-#   │  └──────────────┘ └─────────────┘ └──────────────────┘   │
-#   │  ┌──────────────┐                                        │
-#   │  │full-ecommerce│  (main branch only, to manage API cost)│
-#   │  └──────────────┘                                        │
-#   └────────┬─────────────────────────────────────────────────┘
-#            │ needs
-#   ┌─────────▼────────┐
-#   │  locator-health  │  ← verifies self-healing memory is current
-#   └──────────────────┘
+# Pipeline:
+#   playwright (every push/PR)
+#       └── agentic matrix (main only, parallel per scenario)
+#       │       ├── auth-redirect
+#       │       ├── login-flow
+#       │       ├── product-search
+#       │       └── full-ecommerce
+#       └── locator-health (every push/PR)
+#
+# Requires secret: ANTHROPIC_API_KEY
 
-name: CI — Web Detective
+name: CH7 — Agent CI Pipeline
 
 on:
-  push:
-    branches: [main]
+  # push:
+  #   branches: [main]
   pull_request:
     branches: [main]
 
 env:
   NODE_VERSION: '20'
 
-# ── Job 1: Standard Playwright suite ──────────────────────────────────────────
 jobs:
+
+  # ── Playwright suite — fast deterministic gate ─────────────────────────────
   playwright:
     name: Playwright Tests
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Install Playwright browsers
-        run: npx playwright install chromium --with-deps
+      - run: npm ci
+      - run: npx playwright install chromium --with-deps
 
       - name: Start dev server
         run: npm run dev &
         env:
           NODE_ENV: test
-
       - name: Wait for dev server
         run: npx wait-on http://localhost:5173 --timeout 30000
 
@@ -70,17 +58,15 @@ jobs:
           path: playwright-report/
           retention-days: 7
 
-# ── Job 2: Agentic verification (matrix, parallel per scenario) ────────────────
+  # ── Agentic matrix — one job per scenario, runs in parallel ───────────────
   agentic:
     name: Agent / ${{ matrix.scenario }}
     runs-on: ubuntu-latest
     needs: playwright
-    # Agentic runs cost API tokens — gate to main only.
-    # To enable on PRs too, remove this condition or scope it with a `paths` filter.
     if: github.ref == 'refs/heads/main'
 
     strategy:
-      fail-fast: false       # let all matrix jobs complete even if one fails
+      fail-fast: false
       matrix:
         scenario:
           - auth-redirect
@@ -90,35 +76,28 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Install Playwright browsers
-        run: npx playwright install chromium --with-deps
+      - run: npm ci
+      - run: npx playwright install chromium --with-deps
 
       - name: Start dev server
         run: npm run dev &
         env:
           NODE_ENV: test
-
       - name: Wait for dev server
         run: npx wait-on http://localhost:5173 --timeout 30000
 
       - name: Run agent scenario
-        id: agent
         run: |
           npx ts-node examples/ch7-agent-ci/agent-runner.ts \
             --scenario ${{ matrix.scenario }}
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 
-      - name: Upload agent report
+      - name: Upload scenario report + traces
         uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -128,7 +107,7 @@ jobs:
             traces/
           retention-days: 14
 
-# ── Job 3: Locator health check ────────────────────────────────────────────────
+  # ── Locator health — verifies selector memory stays current ───────────────
   locator-health:
     name: Locator Health
     runs-on: ubuntu-latest
@@ -136,23 +115,17 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Install Playwright browsers
-        run: npx playwright install chromium --with-deps
+      - run: npm ci
+      - run: npx playwright install chromium --with-deps
 
       - name: Start dev server
         run: npm run dev &
         env:
           NODE_ENV: test
-
       - name: Wait for dev server
         run: npx wait-on http://localhost:5173 --timeout 30000
 

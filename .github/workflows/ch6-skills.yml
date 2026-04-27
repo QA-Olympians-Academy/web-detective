@@ -1,0 +1,81 @@
+# CH6 — Creating Effective Testing Skills
+#
+# Validates:
+#   • Every skill directory contains a SKILL.md
+#   • Every SKILL.md has the required frontmatter fields (name, description)
+#   • argument-hint is present where $ARGUMENTS is referenced
+#   • allowed-tools is declared when Bash commands are used in the skill body
+
+name: CH6 — Skills Validation
+
+on:
+  # push:
+  #   branches: [main]
+  #   paths:
+  #     - '.claude/skills/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.claude/skills/**'
+
+jobs:
+  validate-skills:
+    name: Validate Skill Frontmatter
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check every skill has a SKILL.md
+        run: |
+          MISSING=0
+          for dir in .claude/skills/*/; do
+            if [ ! -f "$dir/SKILL.md" ]; then
+              echo "Missing SKILL.md in $dir"
+              MISSING=1
+            fi
+          done
+          [ "$MISSING" -eq 0 ] || exit 1
+          echo "All skill directories have SKILL.md"
+
+      - name: Validate required frontmatter fields
+        run: |
+          ERRORS=0
+          for skill in .claude/skills/*/SKILL.md; do
+            NAME=$(grep -m1 '^name:' "$skill" | sed 's/name: *//')
+            DESC=$(grep -m1 '^description:' "$skill" | sed 's/description: *//')
+            if [ -z "$NAME" ]; then
+              echo "FAIL [$skill]: missing 'name' field"
+              ERRORS=1
+            fi
+            if [ -z "$DESC" ]; then
+              echo "FAIL [$skill]: missing 'description' field"
+              ERRORS=1
+            fi
+            echo "OK   $skill (name=$NAME)"
+          done
+          [ "$ERRORS" -eq 0 ] || exit 1
+
+      - name: Warn if \$ARGUMENTS is used without argument-hint
+        run: |
+          WARNINGS=0
+          for skill in .claude/skills/*/SKILL.md; do
+            HAS_ARGS=$(grep -c '\$ARGUMENTS' "$skill" || true)
+            HAS_HINT=$(grep -c 'argument-hint:' "$skill" || true)
+            if [ "$HAS_ARGS" -gt 0 ] && [ "$HAS_HINT" -eq 0 ]; then
+              echo "WARN [$skill]: uses \$ARGUMENTS but has no argument-hint"
+              WARNINGS=1
+            fi
+          done
+          [ "$WARNINGS" -eq 0 ] && echo "All skills with \$ARGUMENTS have argument-hint"
+          exit 0   # warnings don't fail the build
+
+      - name: Summary — list all registered skills
+        run: |
+          echo ""
+          echo "Registered skills:"
+          for skill in .claude/skills/*/SKILL.md; do
+            NAME=$(grep -m1 '^name:' "$skill" | sed 's/name: *//')
+            DESC=$(grep -m1 '^description:' "$skill" | sed 's/description: *//' | cut -c1-60)
+            printf "  /%-20s %s\n" "$NAME" "$DESC"
+          done

@@ -7,6 +7,9 @@ allowed-tools: Bash(npx playwright *) Bash(npx ts-node *) Read
 
 Detect and heal broken locators. Target: `$ARGUMENTS`
 
+> **Scope note**: this skill heals *selector strings* inside page objects and the LocatorStore (CH4).
+> If the target is a *generated test file* in `tests/generated/`, use `examples/ch4.1-playwright-agents/healer.ts` instead — it rewrites entire `test()` blocks rather than individual selectors.
+
 ## Steps
 
 1. **Identify scope** from `$ARGUMENTS`:

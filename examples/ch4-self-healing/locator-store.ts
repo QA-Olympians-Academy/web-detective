@@ -132,3 +132,31 @@ export const WEB_DETECTIVE_LOCATORS: Array<[string, string]> = [
   ['products.tableRows',   'tbody tr'],
   ['products.footer',      '.table-footer'],
 ]
+
+/**
+ * WORKSHOP TASKS (Chapter 4 hands-on):
+ *
+ * Task A — Seed the store and inspect the initial state:
+ *   const store = new LocatorStore('./locator-memory.json')
+ *   for (const [key, selector] of WEB_DETECTIVE_LOCATORS) store.register(key, selector)
+ *   store.printReport()
+ *   Every entry should show healCount 0. Re-running register() for the same key
+ *   is a no-op — confirm the report stays identical on a second run.
+ *
+ * Task B — Add two new locators you discover from the live page:
+ *   Start the app, open http://localhost:5173/products, run:
+ *     const tree = await page.locator('body').ariaSnapshot()
+ *   Find two elements not yet in WEB_DETECTIVE_LOCATORS (e.g. a column header
+ *   or a pagination control) and add them to the seed array above.
+ *
+ * Task C — Simulate a heal and observe the state change:
+ *   store.heal('login.submitButton', 'button[type="submit"]')
+ *   store.printReport()
+ *   Confirm: selector is updated, the old value appears in fallbacks, healCount is 1.
+ *   Call store.heal() again with a third selector — verify fallbacks has two entries.
+ *
+ * Task D — Export the store as a diff-friendly flat format:
+ *   Add a method toCsv(): string that returns one line per entry:
+ *     key,selector,healCount,lastVerified
+ *   Use it to generate a snapshot you can commit and diff in version control.
+ */

@@ -55,3 +55,30 @@ export function findScenario(name: string): Scenario {
   }
   return s
 }
+
+/**
+ * WORKSHOP TASKS (Chapter 7 hands-on):
+ *
+ * Task A — Add a non-critical logout scenario and confirm it doesn't block the pipeline:
+ *   First add a logout() task to examples/ch5-custom-agent/prompts.ts (see Task A there).
+ *   Then add to SCENARIOS:
+ *     { name: 'logout-flow', task: tasks.logout(), critical: false }
+ *   Run --all and verify: if logout-flow fails, exit code is still 0.
+ *
+ * Task B — Run a single scenario from the CLI and observe the reporter output:
+ *   npx ts-node examples/ch7-agent-ci/agent-runner.ts --scenario product-search
+ *   Note the per-step log lines, the step summary table, and the JSON report written
+ *   to ./agent-report.json. Open the file and inspect the structure.
+ *
+ * Task C — Change a critical scenario to optional and observe the exit code difference:
+ *   Set product-search to critical: false.
+ *   Modify tasks.productSearch() to assert an impossible count (e.g. 999 results).
+ *   Run --all — confirm the pipeline exits 0 despite the failure, with a ⚠ warning.
+ *   Flip critical back to true and re-run — confirm exit code becomes 1.
+ *
+ * Task D — Support prefix matching in findScenario for faster CLI use:
+ *   Update findScenario to first try exact match, then fall back to prefix:
+ *     SCENARIOS.find(s => s.name.startsWith(name))
+ *   Verify: --scenario login resolves to login-flow, --scenario auth resolves to auth-redirect.
+ *   What should happen if the prefix matches two scenarios?
+ */

@@ -123,3 +123,30 @@ export const AGENT_TOOLS: Anthropic.Messages.Tool[] = [
     },
   },
 ]
+
+/**
+ * WORKSHOP TASKS (Chapter 5 hands-on):
+ *
+ * Task A — Add a get_text tool that reads element content for use in later assertions:
+ *   Add a new entry to AGENT_TOOLS with name 'get_text', input_schema: { selector, description }.
+ *   Add 'get_text' to ToolName, then add a case in agent.ts's execute() that calls
+ *   p.locator(selector).innerText() and returns the string.
+ *   Run the fullEcommerce task — observe whether the agent uses it to read stat card values.
+ *
+ * Task B — Add a wait_for_visible tool to replace arbitrary sleeps:
+ *   Add 'wait_for_visible' with inputs { selector, timeout_ms }.
+ *   Wire it to p.locator(selector).waitFor({ state: 'visible', timeout: timeout_ms }).
+ *   Add the rule "never use screenshot() to wait for elements — use wait_for_visible"
+ *   to SYSTEM_PROMPT and observe whether the agent adopts it.
+ *
+ * Task C — Extend assert_text with a negation flag:
+ *   Add an optional not: boolean property to the assert_text input_schema.
+ *   Update the execute() case: when not is true, the assertion passes only if the
+ *   text is absent. Write a task that asserts "Invalid credentials" does NOT appear
+ *   after a successful login.
+ *
+ * Task D — Measure tool call frequency across runs:
+ *   In agent.ts, after the loop ends, log a breakdown of which tools were called
+ *   and how many times: steps.reduce((acc, s) => { acc[s.tool] = (acc[s.tool] ?? 0) + 1 }, {})
+ *   Run fullEcommerce twice. Does the agent always call snapshot() the same number of times?
+ */

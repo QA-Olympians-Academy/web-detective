@@ -145,7 +145,7 @@ Make sure the following are installed before arriving:
 
 ---
 
-### 14:15 – 15:15 · Chapter 4 — Self-Healing Selectors *(60 min)*
+### 14:15 – 15:00 · Chapter 4 — Self-Healing Selectors *(45 min)*
 
 **Concepts**
 - Runtime detection of locator failures
@@ -167,11 +167,38 @@ Make sure the following are installed before arriving:
 
 ---
 
-### ☕ 15:15 – 15:30 · Break *(15 min)*
+### 15:00 – 15:30 · Chapter 4.1 — Playwright Agents: Planner, Generator, Healer *(30 min)*
+
+> Playwright ships three built-in AI agents that operate at a higher level than the selector healer in Chapter 4 — they generate and repair entire test files, not individual locator strings.
+
+**Concepts**
+- The three built-in agents and their roles:
+  - **Planner** — explores the running app via the accessibility tree, produces a structured Markdown test plan in `specs/`
+  - **Generator** — reads the plan, emits runnable TypeScript Playwright test files into `tests/`, verifying selectors live as it generates
+  - **Healer** — runs the suite, replays failing steps, inspects the current UI, rewrites broken `test()` blocks, and re-runs until green
+- Initialising agents with `npx playwright init-agents --loop=claude` and the generated `.github/` agent definitions
+- Seed tests: why the Planner runs one before exploring — bootstrapping fixtures, global setup, and auth state
+- How this differs from Chapter 4: selector-level healing vs. test-block rewriting
+
+**Hands-on**
+- Initialise Playwright agents and inspect the generated agent definitions
+- Run `TestPlannerAgent` against the demo app; review `specs/web-detective.md` before committing
+- Run `TestGeneratorAgent`; compare `tests/generated/web-detective.spec.ts` with hand-written `tests/auth.spec.ts`
+- Introduce a deliberate failure in the generated test, run `TestHealerAgent`, and observe the multi-round repair loop
+- Use the `/pw-plan` skill to drive the full pipeline from a single command
+
+**Questions**
+1. The Planner runs a seed test before navigating the app. What does the seed test actually bootstrap — and what would happen if the Planner navigated to `http://localhost:5173` without it?
+2. The Generator is explicitly allowed to emit tests that contain errors, leaving them for the Healer to fix. Why is it preferable to allow imperfect generation rather than requiring the Generator to produce passing tests on the first attempt?
+3. A button is renamed from "Submit" to "Save" after the tests were generated. The Chapter 4 `SelfHealingAgent` and the Chapter 4.1 `TestHealerAgent` are both available. Which one is the right tool for this failure, and why can't the other one help?
 
 ---
 
-### 15:30 – 16:15 · Chapter 5 — Building Your Own Custom AI Agent *(45 min)*
+### ☕ 15:30 – 15:45 · Break *(15 min)*
+
+---
+
+### 15:45 – 16:30 · Chapter 5 — Building Your Own Custom AI Agent *(45 min)*
 
 **Concepts**
 - Designing the full reasoning loop: observe → plan → act → verify → learn
@@ -192,7 +219,7 @@ Make sure the following are installed before arriving:
 
 ---
 
-### 16:15 – 16:45 · Chapter 6 — Creating Effective Testing Skills *(30 min)*
+### 16:30 – 17:00 · Chapter 6 — Creating Effective Testing Skills *(30 min)*
 
 > Skills (also called custom slash commands) are reusable, parameterised prompts that give an AI agent specialised QA behaviour. A well-crafted skill is the difference between an agent that works once and one that works every time.
 
@@ -231,7 +258,7 @@ Make sure the following are installed before arriving:
 
 ---
 
-### 16:45 – 18:00 · Chapter 7 — Implementing an Agent & Running on CI *(75 min)*
+### 17:00 – 18:00 · Chapter 7 — Implementing an Agent & Running on CI *(60 min)*
 
 > This chapter takes the agent from Chapter 5 and makes it production-grade: structured output, GitHub Actions annotations, parallel scenario matrix, and artifact-based post-mortem.
 

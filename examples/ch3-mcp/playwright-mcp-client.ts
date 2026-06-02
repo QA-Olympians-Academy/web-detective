@@ -132,3 +132,31 @@
  */
 
 export {}
+
+/**
+ * WORKSHOP TASKS (Chapter 3 hands-on):
+ *
+ * Task A — Connect @playwright/mcp to Claude Code and drive the app with natural language:
+ *   Add the mcpServers block from section 1 to .claude/settings.json, then prompt:
+ *   "Log in to http://localhost:5173 with admin@shop.com / password123
+ *    and tell me the four stat card values on the dashboard."
+ *   No test code needed — the agent calls browser_navigate, browser_fill,
+ *   browser_click, and browser_snapshot autonomously.
+ *
+ * Task B — Compare snapshot vs vision mode for a table assertion:
+ *   Run the same prompt twice — once with the default server, once with --vision.
+ *   "Go to the products page and count how many rows are in the table."
+ *   Observe: which mode uses more tokens? Which answers faster?
+ *
+ * Task C — Use browser_get_console_logs to catch a silent JS error:
+ *   In src/pages/Dashboard.tsx, add `console.error('chart render failed')` inside
+ *   a useEffect. Then prompt the agent:
+ *   "Navigate to the dashboard and check for any console errors."
+ *   Observe how the agent surfaces the error without you writing an assertion.
+ *
+ * Task D — Chain snapshot → plan → act:
+ *   Prompt the agent in two steps:
+ *   Step 1: "Take a snapshot of /products and list every interactive element."
+ *   Step 2: "Now use those elements to search for 'Electronics' and count the results."
+ *   Notice how the agent reuses selector knowledge from step 1 in step 2.
+ */

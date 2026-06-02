@@ -135,3 +135,27 @@ ${this.results.map(r => `### ${r.passed ? '✅' : '❌'} ${r.name}\n\n${r.summar
     }
   }
 }
+
+/**
+ * WORKSHOP TASKS (Chapter 7 hands-on):
+ *
+ * Task A — Run the reporter locally and inspect non-CI output:
+ *   npx ts-node examples/ch7-agent-ci/agent-runner.ts --scenario login-flow
+ *   With no GITHUB_ACTIONS env var, record() prints to stdout instead of emitting
+ *   workflow commands. Confirm the step summary table appears in the terminal.
+ *
+ * Task B — Add a duration_ms job output for downstream job conditioning:
+ *   In setOutputs(), add:
+ *     this.setOutput('total_duration_ms', String(this.results.reduce((s, r) => s + r.durationMs, 0)))
+ *   Then in the GitHub Actions workflow, add a step that fails if total_duration_ms > 120000.
+ *
+ * Task C — Add a Slack-compatible JSON payload method:
+ *   Add writeSlackPayload(outPath: string): void that writes a Slack Block Kit message.
+ *   The payload should include: overall pass/fail, scenario count, and a bullet list
+ *   of critical failures. Use https://api.slack.com/block-kit to validate the format.
+ *
+ * Task D — Surface the failing assertion text inline in the PR annotation:
+ *   The annotation() call for a failure currently uses result.summary as the message.
+ *   result.summary often contains the full agent reasoning — trim it to the first
+ *   sentence that contains "✗" so the annotation fits in the PR diff view.
+ */

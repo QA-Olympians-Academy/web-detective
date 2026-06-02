@@ -215,6 +215,50 @@ Use the `/pw-self-heal` skill inside Claude Code for an interactive healing sess
 
 ---
 
+### Ch4.1 — Playwright Agents: Planner, Generator, Healer
+
+**Files:** [examples/ch4.1-playwright-agents/](examples/ch4.1-playwright-agents/)
+
+This chapter covers Playwright's three built-in AI agents that form an end-to-end test generation and healing pipeline. The agents work at the **test-block level** (vs Ch4 which heals individual selectors).
+
+```bash
+# One-time initialisation (generates agent definitions in .github/)
+npx playwright init-agents --loop=claude
+
+# Run the full Planner → Generator pipeline
+ANTHROPIC_API_KEY=sk-... npx ts-node examples/ch4.1-playwright-agents/planner.ts
+# → writes specs/web-detective.md
+# → writes tests/generated/web-detective.spec.ts
+
+# Run the TestHealerAgent on a failing generated test
+ANTHROPIC_API_KEY=sk-... npx ts-node examples/ch4.1-playwright-agents/healer.ts
+# → reruns failing tests, rewrites broken test() blocks, re-runs (max 3 rounds)
+```
+
+**Healing levels comparison:**
+
+| Aspect | Ch4 — Selector Healer | Ch4.1 — Test Block Healer |
+|---|---|---|
+| Scope | Single selector string | Entire `test()` function |
+| Trigger | `locator()` throws | `npx playwright test` fails |
+| Output | Updated `locators.json` | Patched `.spec.ts` file |
+| Best for | Ongoing maintenance | AI-generated test cleanup |
+
+Use the `/pw-plan` skill to run the full pipeline from Claude Code:
+
+```
+/pw-plan web-detective
+```
+
+**Exercises**
+
+1. Run the full pipeline and inspect `specs/web-detective.md` — does the plan cover login, dashboard, and products? Add a missing route and re-run the Generator only.
+2. In `tests/generated/web-detective.spec.ts`, change one `getByRole` call to `locator('.gone')`. Run `TestHealerAgent` and observe the multi-round repair loop in the console.
+3. Compare the Ch4 `SelfHealingAgent` and the Ch4.1 `TestHealerAgent` on the same broken selector — which produces a more stable fix and why?
+4. Use `/pw-plan` skill and compare the skill-generated tests with the programmatic planner output.
+
+---
+
 ### Ch5 — Building Your Own Custom AI Agent
 
 **Files:** [examples/ch5-custom-agent/](examples/ch5-custom-agent/)
@@ -267,7 +311,9 @@ Skills live in [.claude/skills/](/.claude/skills/) and are invoked inside Claude
 | Debug a failure | `/pw-debug "logs out"` | Headed run + trace + root cause analysis |
 | Scaffold new spec | `/pw-new-test checkout flow` | Creates spec + page object, runs until green |
 | Generate page object | `/pw-page-object Checkout /checkout` | Reads React source, generates typed PO |
-| Heal broken locators | `/pw-self-heal` | Detects broken selectors, proposes LLM-ranked replacements |
+| Heal broken locators | `/pw-self-heal` | Detects broken selectors, proposes LLM-ranked replacements (Ch4 selector-level) |
+| Plan + generate tests | `/pw-plan web-detective` | Runs Ch4.1 Planner → Generator pipeline for a feature area |
+| Run CI scenario | `/agent-run login-flow` | Runs a Ch7 scenario locally and shows the reporter output |
 
 **Exercises**
 
@@ -321,6 +367,7 @@ Each chapter has its own workflow file, scoped to its `paths`:
 | [ch2-execution-layer.yml](.github/workflows/ch2-execution-layer.yml) | `examples/ch2-execution-layer/**` | Type-check, ActionWrapper live login smoke test |
 | [ch3-mcp.yml](.github/workflows/ch3-mcp.yml) | `examples/ch3-mcp/**` | Type-check, MCP server boot, tool schema count |
 | [ch4-self-healing.yml](.github/workflows/ch4-self-healing.yml) | `examples/ch4-self-healing/**`, `src/**` | Type-check, seed locator store, probe all selectors against live app |
+| [ch4.1-playwright-agents.yml](.github/workflows/ch4.1-playwright-agents.yml) | `examples/ch4.1-playwright-agents/**`, `src/**` | Type-check, plan validation (>100 chars, 3 snapshots), generator output, optional E2E on `main` |
 | [ch5-custom-agent.yml](.github/workflows/ch5-custom-agent.yml) | `examples/ch5-custom-agent/**` | Type-check, tool registry validation, agent run on `main` |
 | [ch6-skills.yml](.github/workflows/ch6-skills.yml) | `.claude/skills/**` | Frontmatter validation, `argument-hint` presence check |
 | [ch7-agent-ci.yml](.github/workflows/ch7-agent-ci.yml) | Every push/PR | Full pipeline: Playwright + agentic matrix + locator health |
@@ -349,9 +396,25 @@ Edit [examples/ch7-agent-ci/scenarios.ts](examples/ch7-agent-ci/scenarios.ts) �
 
 **Exercises**
 
-1. Add a `dashboard-charts` scenario (non-critical) to [examples/ch7-agent-ci/scenarios.ts](examples/ch7-agent-ci/scenarios.ts) and a matching `dashboardCharts()` task prompt in [examples/ch7-agent-ci/scenarios.ts](examples/ch7-agent-ci/scenarios.ts). Run it with `--scenario dashboard-charts` and observe the step summary.
+1. Add a `dashboard-charts` scenario (non-critical) to [examples/ch7-agent-ci/scenarios.ts](examples/ch7-agent-ci/scenarios.ts) and a matching `dashboardCharts()` task prompt in [examples/ch5-custom-agent/prompts.ts](examples/ch5-custom-agent/prompts.ts). Run it with `--scenario dashboard-charts` and observe the step summary.
 2. Extend `CIReporter.writeStepSummary()` in [examples/ch7-agent-ci/reporter.ts](examples/ch7-agent-ci/reporter.ts) to add a "Zero tool calls" warning row for any scenario where the agent called `done()` on the first turn — this indicates the agent may have short-circuited without actually testing anything.
 3. Modify the workflow in [.github/workflows/ch7-agent-ci.yml](.github/workflows/ch7-agent-ci.yml) to also run the agentic matrix on PRs targeting `main` (not just pushes to `main`), then update the cost-management comment to reflect the new trigger.
+
+---
+
+## Presentation
+
+The workshop slide deck is checked in as `web-detective-workshop.pptx` (82 slides, 8 hours of content).
+
+To rebuild it from source:
+
+```bash
+pip install python-pptx
+python3 build_presentation.py
+# → overwrites web-detective-workshop.pptx
+```
+
+`build_presentation.py` covers every chapter with opener, concept, code, discussion, and task slides.
 
 ---
 
@@ -359,37 +422,44 @@ Edit [examples/ch7-agent-ci/scenarios.ts](examples/ch7-agent-ci/scenarios.ts) �
 
 ```
 web-detective/
-├── src/                        # React app (the system under test)
-│   ├── pages/                  # Login, Dashboard, Products
-│   ├── components/             # Navbar, PrivateRoute
+├── src/                          # React app (the system under test)
+│   ├── pages/                    # Login, Dashboard, Products
+│   ├── components/               # Navbar, PrivateRoute
 │   └── context/AuthContext.tsx
-├── tests/                      # Playwright test suite
-│   ├── fixtures/index.ts       # Custom test + authenticated fixture
-│   ├── pages/                  # Page objects (LoginPage, etc.)
+├── tests/                        # Playwright test suite
+│   ├── fixtures/index.ts         # Custom test + authenticated fixture
+│   ├── pages/                    # Page objects (LoginPage, etc.)
 │   ├── auth.spec.ts
 │   ├── dashboard.spec.ts
 │   └── products.spec.ts
-├── examples/                   # Workshop chapter examples
-│   ├── ch1-foundations/
-│   ├── ch2-execution-layer/
-│   ├── ch3-mcp/
-│   ├── ch4-self-healing/
-│   ├── ch5-custom-agent/
-│   └── ch7-agent-ci/
-├── .claude/skills/             # Claude Code custom slash commands
+├── examples/                     # Workshop chapter examples
+│   ├── ch1-foundations/          # brittle-test.spec.ts, task-graph.ts
+│   ├── ch2-execution-layer/      # action-wrapper.ts, browser-session.ts
+│   ├── ch3-mcp/                  # server.ts, playwright-mcp-client.ts
+│   ├── ch4-self-healing/         # locator-store.ts, self-healer.ts
+│   ├── ch4.1-playwright-agents/  # planner.ts, healer.ts  ← NEW
+│   ├── ch5-custom-agent/         # agent.ts, tools.ts, prompts.ts
+│   └── ch7-agent-ci/             # agent-runner.ts, reporter.ts, scenarios.ts
+├── specs/                        # AI-generated test plans (output of Ch4.1 Planner)
+├── tests/generated/              # AI-generated test code (output of Ch4.1 Generator)
+├── .claude/skills/               # Claude Code custom slash commands
 │   ├── pw-run/
 │   ├── pw-debug/
 │   ├── pw-new-test/
 │   ├── pw-page-object/
-│   └── pw-self-heal/
-└── .github/workflows/
-    ├── ch1-foundations.yml
-    ├── ch2-execution-layer.yml
-    ├── ch3-mcp.yml
-    ├── ch4-self-healing.yml
-    ├── ch5-custom-agent.yml
-    ├── ch6-skills.yml
-    └── ch7-agent-ci.yml
+│   ├── pw-self-heal/             # Ch4 selector-level healing
+│   └── pw-plan/                  # Ch4.1 Planner+Generator pipeline  ← NEW
+├── .github/workflows/
+│   ├── ch1-foundations.yml
+│   ├── ch2-execution-layer.yml
+│   ├── ch3-mcp.yml
+│   ├── ch4-self-healing.yml
+│   ├── ch4.1-playwright-agents.yml  ← NEW
+│   ├── ch5-custom-agent.yml
+│   ├── ch6-skills.yml
+│   └── ch7-agent-ci.yml
+├── build_presentation.py         # Rebuilds web-detective-workshop.pptx  ← NEW
+└── web-detective-workshop.pptx   # 82-slide workshop deck  ← NEW
 ```
 
 ## Stack
@@ -397,6 +467,7 @@ web-detective/
 - **React 18** + **TypeScript** + **Vite 5**
 - **React Router v6** — client-side routing
 - **Recharts** — bar and line charts
-- **Playwright** — test suite + execution layer + MCP server
-- **Anthropic SDK** — LLM reasoning in Ch4 (self-healing) and Ch5 (custom agent)
+- **Playwright** — test suite + execution layer + MCP server + built-in AI agents (Ch4.1)
+- **Anthropic SDK** — LLM reasoning in Ch4 (self-healing), Ch5 (custom agent), Ch4.1 (planner/generator/healer)
 - **@modelcontextprotocol/sdk** — custom MCP server in Ch3
+- **python-pptx** — presentation build script

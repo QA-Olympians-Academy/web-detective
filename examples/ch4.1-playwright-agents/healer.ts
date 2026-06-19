@@ -191,7 +191,7 @@ export class TestHealerAgent {
     if (!failure.snippet) return null
 
     const response = await this.client.messages.create({
-      model: 'claude-sonnet-4-6',
+      model: process.env.WORKSHOP_MODEL ?? 'claude-haiku-4-5',
       max_tokens: 1024,
       system: `You are a Playwright test healer. You receive a failing test() block, its
 error message, and the current accessibility tree of the page.

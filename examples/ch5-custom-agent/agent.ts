@@ -66,10 +66,15 @@ export class WebTestAgent {
     ]
 
     for (let turn = 0; turn < 15; turn++) {
+      // Cache the growing conversation tail so each turn reads the prior turns
+      // (snapshots, tool results) from cache at ~0.1x instead of full price.
+      this.cacheConversation(messages)
+
       const response = await this.client.messages.create({
-        model: 'claude-sonnet-4-6',
+        // Tier is configurable: cheap by default for the workshop, override per run.
+        model: process.env.WORKSHOP_MODEL ?? 'claude-haiku-4-5',
         max_tokens: 1024,
-        // Cache the system prompt — it's the same for every turn in a run
+        // Cache the system prompt + tools — identical on every turn in a run.
         system: [
           {
             type: 'text',
@@ -80,6 +85,12 @@ export class WebTestAgent {
         tools: AGENT_TOOLS,
         messages,
       })
+
+      // Visibility: read climbs each turn once caching is working; fresh stays small.
+      const u = response.usage
+      console.log(
+        `  tokens — fresh:${u.input_tokens} write:${u.cache_creation_input_tokens ?? 0} read:${u.cache_read_input_tokens ?? 0} out:${u.output_tokens}`,
+      )
 
       // Append assistant response to conversation
       messages.push({ role: 'assistant', content: response.content })
@@ -118,6 +129,26 @@ export class WebTestAgent {
     }
 
     return { goal, passed: false, summary: 'Reached max tool call limit (15)', toolCalls: 15 }
+  }
+
+  // ── Prompt caching ──────────────────────────────────────────────────────────
+
+  /**
+   * Mark the last content block of the most recent turn with cache_control so the
+   * next request reads the whole conversation prefix from cache. Clearing the prior
+   * marker first keeps us within the 4-breakpoint limit as the conversation grows.
+   */
+  private cacheConversation(messages: Anthropic.Messages.MessageParam[]): void {
+    for (const msg of messages) {
+      if (typeof msg.content === 'string') continue
+      for (const block of msg.content as Array<{ cache_control?: unknown }>) {
+        delete block.cache_control
+      }
+    }
+    const last = messages[messages.length - 1]
+    if (!last || typeof last.content === 'string' || last.content.length === 0) return
+    const tail = last.content[last.content.length - 1] as { cache_control?: { type: 'ephemeral' } }
+    tail.cache_control = { type: 'ephemeral' }
   }
 
   // ── Tool executor ─────────────────────────────────────────────────────────

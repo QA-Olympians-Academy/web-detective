@@ -90,7 +90,7 @@ export class SelfHealingAgent {
     accessibilityTree: string,
   ): Promise<string[]> {
     const response = await this.client.messages.create({
-      model: 'claude-sonnet-4-6',
+      model: process.env.WORKSHOP_MODEL ?? 'claude-haiku-4-5',
       max_tokens: 512,
       system: `You are a Playwright selector expert. Given a broken CSS/ARIA selector and the
 current accessibility tree of a web page, return 3-5 alternative Playwright selectors

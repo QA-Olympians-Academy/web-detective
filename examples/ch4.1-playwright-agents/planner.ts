@@ -114,7 +114,7 @@ export class TestPlannerAgent {
       .join('\n\n')
 
     const response = await this.client.messages.create({
-      model: 'claude-sonnet-4-6',
+      model: process.env.WORKSHOP_MODEL ?? 'claude-haiku-4-5',
       max_tokens: 2048,
       system: `You are a Playwright test planning agent. Given accessibility snapshots of a
 web application, produce a structured Markdown test plan.
@@ -182,7 +182,7 @@ export class TestGeneratorAgent {
 
   private async generateCode(planName: string, plan: string): Promise<string> {
     const response = await this.client.messages.create({
-      model: 'claude-sonnet-4-6',
+      model: process.env.WORKSHOP_MODEL ?? 'claude-haiku-4-5',
       max_tokens: 4096,
       system: `You are a Playwright test code generator. Convert a Markdown test plan into
 runnable TypeScript Playwright tests.

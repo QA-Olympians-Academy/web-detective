@@ -125,6 +125,7 @@ Rebuild with `python3 build_presentation.py` (requires `pip install python-pptx`
 
 - Always start the dev server (`npm run dev`) before running any chapter example or Playwright test.
 - `ANTHROPIC_API_KEY` must be set in the shell for any LLM-backed example (Ch4, Ch4.1, Ch5, Ch7).
+- `WORKSHOP_MODEL` overrides the model for all LLM-backed examples (default `claude-haiku-4-5`, cheapest tier). Set e.g. `WORKSHOP_MODEL=claude-sonnet-4-6` for a higher-intelligence demo. The Ch5/Ch7 agent loop also caches the system prompt + growing conversation (`cache_control: ephemeral`) — cache reads cost ~0.1x; the per-turn `tokens —` log shows `read` climbing once it's warm.
 - The `locators.json` file produced by Ch4 is gitignored — it is runtime state, not source.
 - Generated specs in `tests/generated/` are intentionally imperfect; the Ch4.1 Healer cleans them up.
 - Prefer ARIA selectors (`getByRole`, `getByLabel`, `getByText`) everywhere. No CSS or XPath selectors in new code.

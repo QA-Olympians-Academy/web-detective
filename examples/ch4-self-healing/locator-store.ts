@@ -1,5 +1,9 @@
+// @ts-nocheck
 /**
- * CH4 — LOCATOR STORE (persistent locator memory)
+ * CH4 EXERCISE FILE — LOCATOR STORE (persistent locator memory)
+ *
+ * This is a starter stub. Implement the method bodies live during the workshop.
+ * Full reference implementation: `git checkout solutions` and see SOLUTIONS.md.
  *
  * Records the current best selector for each logical element.
  * When a selector breaks, the healer proposes a replacement and writes it here.
@@ -29,108 +33,52 @@ export class LocatorStore {
   // ── Read ──────────────────────────────────────────────────────────────────
 
   get(key: string): LocatorEntry | undefined {
-    return this.entries.get(key)
+    throw new Error('TODO: implement in Chapter 4')
   }
 
   getSelector(key: string): string | undefined {
-    return this.entries.get(key)?.selector
+    throw new Error('TODO: implement in Chapter 4')
   }
 
   all(): LocatorEntry[] {
-    return [...this.entries.values()]
+    throw new Error('TODO: implement in Chapter 4')
   }
 
   // ── Write ─────────────────────────────────────────────────────────────────
 
   register(key: string, selector: string): void {
-    if (!this.entries.has(key)) {
-      this.entries.set(key, {
-        key,
-        selector,
-        fallbacks: [],
-        healCount: 0,
-        lastVerified: new Date().toISOString(),
-      })
-      this.save()
-    }
+    throw new Error('TODO: implement in Chapter 4')
   }
 
   markVerified(key: string): void {
-    const entry = this.entries.get(key)
-    if (entry) {
-      entry.lastVerified = new Date().toISOString()
-      this.save()
-    }
+    throw new Error('TODO: implement in Chapter 4')
   }
 
   heal(key: string, newSelector: string): void {
-    const entry = this.entries.get(key)
-    if (!entry) return
-
-    entry.fallbacks.unshift(entry.selector)  // push old selector to fallbacks
-    entry.selector = newSelector
-    entry.healCount += 1
-    entry.lastHealed = new Date().toISOString()
-    this.save()
-
-    console.log(`[LocatorStore] Healed "${key}": "${entry.fallbacks[0]}" → "${newSelector}"`)
+    throw new Error('TODO: implement in Chapter 4')
   }
 
   // ── Persistence ───────────────────────────────────────────────────────────
 
   private load(): Map<string, LocatorEntry> {
-    if (!fs.existsSync(this.filePath)) return new Map()
-    try {
-      const raw = JSON.parse(fs.readFileSync(this.filePath, 'utf-8')) as LocatorEntry[]
-      return new Map(raw.map(e => [e.key, e]))
-    } catch {
-      return new Map()
-    }
+    throw new Error('TODO: implement in Chapter 4')
   }
 
   private save(): void {
-    fs.mkdirSync(path.dirname(this.filePath), { recursive: true })
-    fs.writeFileSync(
-      this.filePath,
-      JSON.stringify([...this.entries.values()], null, 2),
-      'utf-8',
-    )
+    throw new Error('TODO: implement in Chapter 4')
   }
 
   // ── Report ────────────────────────────────────────────────────────────────
 
   printReport(): void {
-    console.log('\n── Locator Memory Report ──────────────────────────────')
-    for (const entry of this.entries.values()) {
-      const healed = entry.healCount > 0 ? ` (healed ${entry.healCount}x)` : ''
-      console.log(`  ${entry.key}${healed}`)
-      console.log(`    current   : ${entry.selector}`)
-      if (entry.fallbacks.length > 0) {
-        console.log(`    fallbacks : ${entry.fallbacks.join(', ')}`)
-      }
-    }
-    console.log('────────────────────────────────────────────────────────\n')
+    throw new Error('TODO: implement in Chapter 4')
   }
 }
 
 // ── Seed data — web-detective app locators ────────────────────────────────────
 
 export const WEB_DETECTIVE_LOCATORS: Array<[string, string]> = [
-  ['login.emailInput',     'label:has-text("Email address") + input, input#email'],
-  ['login.passwordInput',  'label:has-text("Password") + input, input#password'],
-  ['login.submitButton',   'button:has-text("Sign In")'],
-  ['login.errorMessage',   '.form-error'],
-  ['nav.brand',            '.navbar-brand'],
-  ['nav.dashboardLink',    'a:has-text("Dashboard")'],
-  ['nav.productsLink',     'a:has-text("Products")'],
-  ['nav.logoutButton',     'button:has-text("Logout")'],
-  ['dashboard.heading',    'h2:has-text("Dashboard")'],
-  ['dashboard.statCards',  '.stat-card'],
-  ['dashboard.chartCards', '.chart-card'],
-  ['products.heading',     'h2:has-text("Products")'],
-  ['products.searchInput', 'input[placeholder*="Search"]'],
-  ['products.tableRows',   'tbody tr'],
-  ['products.footer',      '.table-footer'],
+  // TODO: populate with the web-detective app locators during Chapter 4
 ]
 
 /**

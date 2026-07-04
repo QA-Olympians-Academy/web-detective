@@ -50,7 +50,9 @@ export async function chat(
     messages,
     options: {
       temperature: opts.temperature ?? 0.2,
-      num_predict: opts.maxTokens ?? 1024,
+      // DeepSeek-R1 spends tokens "thinking" before answering; too small a budget
+      // yields empty content. Default generously.
+      num_predict: opts.maxTokens ?? 2048,
     },
   })
   return {

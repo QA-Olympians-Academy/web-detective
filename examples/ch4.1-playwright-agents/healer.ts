@@ -209,7 +209,7 @@ Current page accessibility tree:
 ${liveSnapshot}
 
 Return the fixed test() block.`,
-      { maxTokens: 1024 },
+      { maxTokens: 2048 },
     )
 
     const fenced = text.match(/```(?:typescript|ts)?\n([\s\S]*?)```/)

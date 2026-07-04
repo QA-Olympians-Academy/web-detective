@@ -79,7 +79,8 @@ export class WebTestAgent {
     for (let turn = 0; turn < MAX_TURNS; turn++) {
       const { text, promptTokens, outputTokens } = await chat(
         [{ role: 'system', content: system }, ...conversation],
-        { maxTokens: 1024 },
+        // DeepSeek-R1 reasons before answering — give it room or content comes back empty.
+        { maxTokens: 2048 },
       )
 
       // Visibility: prompt tokens grow as the conversation (snapshots, results) grows.

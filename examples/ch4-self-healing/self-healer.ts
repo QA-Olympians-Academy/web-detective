@@ -106,7 +106,7 @@ Current accessibility tree:
 ${accessibilityTree}
 
 Return a JSON array of 3-5 alternative Playwright selectors for this element.`,
-      { maxTokens: 512 },
+      { maxTokens: 1024 },
     )
 
     return extractJson<string[]>(text) ?? []

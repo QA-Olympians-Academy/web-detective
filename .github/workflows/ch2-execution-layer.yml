@@ -57,7 +57,7 @@ jobs:
 
       - name: Run ActionWrapper login flow
         run: |
-          npx ts-node -e "
+          npx tsx -e "
           const { chromium } = require('playwright')
           const { ActionWrapper } = require('./examples/ch2-execution-layer/action-wrapper')
           void (async () => {

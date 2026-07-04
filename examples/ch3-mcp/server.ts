@@ -6,7 +6,7 @@
  * using natural language without needing to know Playwright.
  *
  * Install deps:  npm install @modelcontextprotocol/sdk playwright
- * Run:           npx ts-node examples/ch3-mcp/server.ts
+ * Run:           npx tsx examples/ch3-mcp/server.ts
  * Connect:       add to your MCP client config (see playwright-mcp-client.ts)
  */
 import { Server } from '@modelcontextprotocol/sdk/server/index.js'
@@ -211,7 +211,7 @@ void (async () => {
 /**
  * WORKSHOP TASK (Chapter 3 hands-on):
  *
- * 1. Start this server: npx ts-node examples/ch3-mcp/server.ts
+ * 1. Start this server: npx tsx examples/ch3-mcp/server.ts
  * 2. Register it in your MCP client (Claude Code or VS Code settings).
  * 3. Ask the AI: "Log in to the web-detective app and confirm the dashboard loads."
  * 4. Watch it call browser_navigate, browser_fill, browser_click, browser_assert_url

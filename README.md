@@ -41,7 +41,7 @@ Open [http://localhost:5173](http://localhost:5173) and log in with:
 
 ## Workshop Chapters
 
-Each chapter has runnable examples under `examples/`. Start the dev server first:
+Each chapter has runnable examples under `examples/`, run with `npx tsx` (the repo is an ESM package, so use `tsx` rather than `ts-node`). Start the dev server first:
 
 ```bash
 npm run dev
@@ -60,7 +60,7 @@ Run the brittle test to see it pass, then intentionally break a selector to see 
 npx playwright test examples/ch1-foundations/brittle-test.spec.ts --headed
 
 # Inspect the typed task graph structure
-npx ts-node -e "import { describeGraph, loginTaskGraph } from './examples/ch1-foundations/task-graph.ts'; describeGraph(loginTaskGraph)"
+npx tsx -e "import { describeGraph, loginTaskGraph } from './examples/ch1-foundations/task-graph.ts'; describeGraph(loginTaskGraph)"
 ```
 
 **Exercises**
@@ -95,8 +95,8 @@ npx playwright show-report
 The `ActionWrapper` and `BrowserSession` classes are imported by later chapters — explore them directly:
 
 ```bash
-npx ts-node examples/ch2-execution-layer/action-wrapper.ts
-npx ts-node examples/ch2-execution-layer/browser-session.ts
+npx tsx examples/ch2-execution-layer/action-wrapper.ts
+npx tsx examples/ch2-execution-layer/browser-session.ts
 ```
 
 **Exercises**
@@ -118,7 +118,7 @@ npx ts-node examples/ch2-execution-layer/browser-session.ts
 npm install @modelcontextprotocol/sdk
 
 # Start the server (communicates over stdio)
-npx ts-node examples/ch3-mcp/server.ts
+npx tsx examples/ch3-mcp/server.ts
 ```
 
 Register it in Claude Code (`.claude/settings.json`):
@@ -128,7 +128,7 @@ Register it in Claude Code (`.claude/settings.json`):
   "mcpServers": {
     "web-detective": {
       "command": "npx",
-      "args": ["ts-node", "examples/ch3-mcp/server.ts"]
+      "args": ["tsx", "examples/ch3-mcp/server.ts"]
     }
   }
 }
@@ -172,7 +172,7 @@ See [examples/ch3-mcp/playwright-mcp-client.ts](examples/ch3-mcp/playwright-mcp-
 
 ```bash
 # Seed the locator store with the app's default selectors
-npx ts-node -e "
+npx tsx -e "
 import { LocatorStore, WEB_DETECTIVE_LOCATORS } from './examples/ch4-self-healing/locator-store.ts'
 const store = new LocatorStore('./locator-memory.json')
 for (const [key, selector] of WEB_DETECTIVE_LOCATORS) store.register(key, selector)
@@ -189,7 +189,7 @@ npm run build
 
 # 3. Run the self-healer (requires a running Ollama server — see setup/local-llm-setup.md)
 #    It asks the local model (DeepSeek-R1) for alternatives — no API key needed.
-npx ts-node -e "
+npx tsx -e "
 import { chromium } from 'playwright'
 import { LocatorStore } from './examples/ch4-self-healing/locator-store.ts'
 import { SelfHealingAgent } from './examples/ch4-self-healing/self-healer.ts'
@@ -227,12 +227,12 @@ This chapter covers Playwright's three built-in AI agents that form an end-to-en
 npx playwright init-agents --loop=claude
 
 # Run the full Planner → Generator pipeline
-npx ts-node examples/ch4.1-playwright-agents/planner.ts
+npx tsx examples/ch4.1-playwright-agents/planner.ts
 # → writes specs/web-detective.md
 # → writes tests/generated/web-detective.spec.ts
 
 # Run the TestHealerAgent on a failing generated test
-npx ts-node examples/ch4.1-playwright-agents/healer.ts
+npx tsx examples/ch4.1-playwright-agents/healer.ts
 # → reruns failing tests, rewrites broken test() blocks, re-runs (max 3 rounds)
 ```
 
@@ -270,7 +270,7 @@ Requires a running Ollama server with `deepseek-r1:8b` pulled — see [setup/loc
 
 ```bash
 # Run the full e-commerce verification agent
-npx ts-node examples/ch5-custom-agent/agent.ts
+npx tsx examples/ch5-custom-agent/agent.ts
 ```
 
 Because DeepSeek-R1 is a local reasoning model with no native tool calling, the agent drives its tools via a prompt-based JSON action protocol — the model returns one `{ "tool", "input" }` object per turn.
@@ -331,7 +331,7 @@ Skills live in [.claude/skills/](/.claude/skills/) and are invoked inside Claude
 #### List available scenarios
 
 ```bash
-npx ts-node examples/ch7-agent-ci/agent-runner.ts --list
+npx tsx examples/ch7-agent-ci/agent-runner.ts --list
 ```
 
 #### Run a single scenario locally
@@ -339,16 +339,16 @@ npx ts-node examples/ch7-agent-ci/agent-runner.ts --list
 Requires a running Ollama server (see [setup/local-llm-setup.md](setup/local-llm-setup.md)) — no API key.
 
 ```bash
-npx ts-node examples/ch7-agent-ci/agent-runner.ts --scenario login-flow
-npx ts-node examples/ch7-agent-ci/agent-runner.ts --scenario auth-redirect
-npx ts-node examples/ch7-agent-ci/agent-runner.ts --scenario product-search
-npx ts-node examples/ch7-agent-ci/agent-runner.ts --scenario full-ecommerce
+npx tsx examples/ch7-agent-ci/agent-runner.ts --scenario login-flow
+npx tsx examples/ch7-agent-ci/agent-runner.ts --scenario auth-redirect
+npx tsx examples/ch7-agent-ci/agent-runner.ts --scenario product-search
+npx tsx examples/ch7-agent-ci/agent-runner.ts --scenario full-ecommerce
 ```
 
 #### Run all scenarios sequentially
 
 ```bash
-npx ts-node examples/ch7-agent-ci/agent-runner.ts --all
+npx tsx examples/ch7-agent-ci/agent-runner.ts --all
 ```
 
 Each run produces:

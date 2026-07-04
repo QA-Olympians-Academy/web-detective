@@ -396,7 +396,7 @@ def build(prs):
          ("ollama run deepseek-r1:8b 'hello'", BGREEN),
          ("  → a response = local model wired correctly", MUTED),
          ("", WHITE),
-         ("npx ts-node examples/ch5-custom-agent/agent.ts", BGREEN),
+         ("npx tsx examples/ch5-custom-agent/agent.ts", BGREEN),
          ("  → agent should log steps and pass the full e-commerce scenario", MUTED),
          ("", WHITE),
          ("If anything fails → raise your hand now.", ORANGE)])
@@ -807,7 +807,7 @@ def build(prs):
          ("Server calls Playwright  →  result flows back  →  LLM sees result and plans next action.", WHITE),
          ("", WHITE),
          ("Config in .claude/settings.json:", MUTED),
-         ('{ "mcpServers": { "web-detective": { "command": "npx", "args": ["ts-node", "examples/ch3-mcp/server.ts"] } } }', BGREEN)],
+         ('{ "mcpServers": { "web-detective": { "command": "npx", "args": ["tsx", "examples/ch3-mcp/server.ts"] } } }', BGREEN)],
         13, font="Courier New" if False else None)
 
     # ── 33. Tool Schema Design ────────────────────────────────────────────────
@@ -1072,7 +1072,7 @@ def build(prs):
          "store.printReport()  →  old value in fallbacks, healCount 1, lastHealed set"),
         ("Add a toCsv() method",
          "Add toCsv(): string to LocatorStore — one line per entry: key,selector,healCount.\n"
-         "Run npx ts-node -e '...' to print it. Commit the CSV for diff-friendly history."),
+         "Run npx tsx -e '...' to print it. Commit the CSV for diff-friendly history."),
     ])
 
     # ── 46. Ch4.1 Opener ──────────────────────────────────────────────────────
@@ -1129,7 +1129,7 @@ def build(prs):
          ("  • opencode  (--loop=opencode)", WHITE),
          ("", WHITE),
          ("Or run programmatically:", MUTED),
-         ("npx ts-node examples/ch4.1-playwright-agents/planner.ts", BGREEN),
+         ("npx tsx examples/ch4.1-playwright-agents/planner.ts", BGREEN),
          ("→ Creates specs/ and tests/generated/", MUTED)],
         "Pipeline",
         [("Planner explores app", HORANGE),
@@ -1194,7 +1194,7 @@ def build(prs):
          "npx playwright init-agents --loop=claude\n"
          "Open .github/ and read the generated agent definitions."),
         ("Run the Planner",
-         "npx ts-node examples/ch4.1-playwright-agents/planner.ts\n"
+         "npx tsx examples/ch4.1-playwright-agents/planner.ts\n"
          "Review specs/web-detective.md — does it cover login, dashboard, and products?"),
         ("Break a test and heal it",
          "In tests/generated/web-detective.spec.ts change one getByRole to locator('.gone').\n"
@@ -1332,7 +1332,7 @@ def build(prs):
     sl = s()
     slide_tasks(sl, "CH 5", BGREEN, [
         ("Run the agent",
-         "npx ts-node examples/ch5-custom-agent/agent.ts\n"
+         "npx tsx examples/ch5-custom-agent/agent.ts\n"
          "Watch the per-step log. How many snapshot() calls in the full e-commerce run?"),
         ("Add a logout task prompt",
          "In prompts.ts add tasks.logout(). Goal: click Logout → assert URL has /login.\n"
@@ -1596,7 +1596,7 @@ def build(prs):
     # ── 74. Part A — CI Reporter ─────────────────────────────────────────────
     sl = s()
     slide_concept(sl, "CH 7  · Part A", BLUE, "Part A — CI Reporter Walkthrough",
-        [("npx ts-node examples/ch7-agent-ci/agent-runner.ts --scenario login-flow", BGREEN),
+        [("npx tsx examples/ch7-agent-ci/agent-runner.ts --scenario login-flow", BGREEN),
          ("", WHITE),
          ("Without GITHUB_ACTIONS set, reporter prints to stdout:", WHITE),
          ("  ✓ [Agent scenario passed: login-flow]  Summary: ...", BGREEN),
@@ -1616,9 +1616,9 @@ def build(prs):
     sl = s()
     slide_concept(sl, "CH 7  · Part B", BLUE, "Part B — Scenario Runner",
         [("CLI interface:", MUTED),
-         ("  npx ts-node examples/ch7-agent-ci/agent-runner.ts --list", BGREEN),
-         ("  npx ts-node examples/ch7-agent-ci/agent-runner.ts --scenario login-flow", BGREEN),
-         ("  npx ts-node examples/ch7-agent-ci/agent-runner.ts --all", BGREEN),
+         ("  npx tsx examples/ch7-agent-ci/agent-runner.ts --list", BGREEN),
+         ("  npx tsx examples/ch7-agent-ci/agent-runner.ts --scenario login-flow", BGREEN),
+         ("  npx tsx examples/ch7-agent-ci/agent-runner.ts --all", BGREEN),
          ("", WHITE),
          ("Exit codes:", MUTED),
          ("  0   all critical scenarios passed", BGREEN),
@@ -1649,7 +1649,7 @@ def build(prs):
     sl = s()
     slide_tasks(sl, "CH 7", BLUE, [
         ("Run a single scenario",
-         "npx ts-node examples/ch7-agent-ci/agent-runner.ts --scenario product-search\n"
+         "npx tsx examples/ch7-agent-ci/agent-runner.ts --scenario product-search\n"
          "Open agent-report.json. How many tool calls did the scenario use?"),
         ("Flip critical and observe exit code",
          "Set product-search critical: false. Make it assert an impossible count.\n"

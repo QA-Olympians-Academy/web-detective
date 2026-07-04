@@ -2,7 +2,7 @@
 name: pw-self-heal
 description: Detect broken Playwright locators in the project's page objects, propose LLM-ranked replacements, and update the locator store.
 argument-hint: "[page-object-file-or-key]"
-allowed-tools: Bash(npx playwright *) Bash(npx ts-node *) Read
+allowed-tools: Bash(npx playwright *) Bash(npx tsx *) Read
 ---
 
 Detect and heal broken locators. Target: `$ARGUMENTS`

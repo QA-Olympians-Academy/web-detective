@@ -22,7 +22,7 @@ Generate a Playwright test plan and test code. Target: `$ARGUMENTS`
 3. **Run the Planner** to explore the app and produce a Markdown plan
    (requires a local Ollama server with `deepseek-r1:8b` — see `setup/local-llm-setup.md`):
    ```
-   npx ts-node -e "
+   npx tsx -e "
      const { TestPlannerAgent } = require('./examples/ch4.1-playwright-agents/planner')
      void new TestPlannerAgent()
        .plan('http://localhost:5173', ['/login', '/dashboard', '/products'], '$PLAN_NAME')
@@ -37,7 +37,7 @@ Generate a Playwright test plan and test code. Target: `$ARGUMENTS`
 
 5. **Run the Generator** to emit runnable TypeScript tests:
    ```
-   npx ts-node -e "
+   npx tsx -e "
      const { TestGeneratorAgent } = require('./examples/ch4.1-playwright-agents/planner')
      void new TestGeneratorAgent(process.env.ANTHROPIC_API_KEY)
        .generate('$PLAN_NAME')

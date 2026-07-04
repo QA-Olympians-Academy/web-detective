@@ -25,7 +25,7 @@
  *   3. Lint for potentially hallucinated CSS selectors
  *   4. Write test file to tests/generated/<name>.spec.ts
  *
- * Run: npx ts-node examples/ch4.1-playwright-agents/planner.ts
+ * Run: npx tsx examples/ch4.1-playwright-agents/planner.ts
  *   (requires a local Ollama server with deepseek-r1:8b — see setup/local-llm-setup.md)
  */
 import { chromium, type Page } from 'playwright'
@@ -244,7 +244,7 @@ void (async () => {
  *
  * Task A — Run the full Planner → Generator pipeline against the live app:
  *   npm run dev &   # start the web-detective app
- *   npx ts-node examples/ch4.1-playwright-agents/planner.ts
+ *   npx tsx examples/ch4.1-playwright-agents/planner.ts
  *   Inspect specs/web-detective.md — does the plan match what you'd write by hand?
  *
  * Task B — Use Playwright's built-in agents (VS Code / Claude Code):

@@ -140,7 +140,7 @@ ${this.results.map(r => `### ${r.passed ? '✅' : '❌'} ${r.name}\n\n${r.summar
  * WORKSHOP TASKS (Chapter 7 hands-on):
  *
  * Task A — Run the reporter locally and inspect non-CI output:
- *   npx ts-node examples/ch7-agent-ci/agent-runner.ts --scenario login-flow
+ *   npx tsx examples/ch7-agent-ci/agent-runner.ts --scenario login-flow
  *   With no GITHUB_ACTIONS env var, record() prints to stdout instead of emitting
  *   workflow commands. Confirm the step summary table appears in the terminal.
  *

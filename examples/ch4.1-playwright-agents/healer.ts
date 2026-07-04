@@ -17,7 +17,7 @@
  *   4. Ask the local model to rewrite that block given the error and a fresh ariaSnapshot
  *   5. Apply the patch in-place and proceed to the next round
  *
- * Run: npx ts-node examples/ch4.1-playwright-agents/healer.ts
+ * Run: npx tsx examples/ch4.1-playwright-agents/healer.ts
  *   (requires a local Ollama server with deepseek-r1:8b — see setup/local-llm-setup.md)
  */
 import { chromium } from 'playwright'

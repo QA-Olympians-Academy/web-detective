@@ -20,10 +20,10 @@ npx tsc --noEmit -p tsconfig.examples.json       # type-check all examples
 # Chapter examples (requires a local Ollama server — see setup/local-llm-setup.md)
 ollama serve &                       # if not already running (port 11434)
 ollama pull deepseek-r1:8b           # one time, ~5 GB
-npx ts-node examples/ch5-custom-agent/agent.ts
-npx ts-node examples/ch4.1-playwright-agents/planner.ts
-npx ts-node examples/ch7-agent-ci/agent-runner.ts --scenario login-flow
-npx ts-node examples/ch7-agent-ci/agent-runner.ts --all
+npx tsx examples/ch5-custom-agent/agent.ts
+npx tsx examples/ch4.1-playwright-agents/planner.ts
+npx tsx examples/ch7-agent-ci/agent-runner.ts --scenario login-flow
+npx tsx examples/ch7-agent-ci/agent-runner.ts --all
 
 # Presentation rebuild
 python3 build_presentation.py   # rewrites web-detective-workshop.pptx (82 slides)
@@ -51,6 +51,8 @@ All chapter examples share `tsconfig.examples.json`:
 - includes: `examples/` only
 
 Never run `tsc` without `-p tsconfig.examples.json` for examples — the root `tsconfig.json` is for the React app only.
+
+Run examples with `npx tsx` (not `ts-node`) — the repo is an ESM package and `ts-node` can't resolve the examples' relative imports on Node ≥20.
 
 ---
 

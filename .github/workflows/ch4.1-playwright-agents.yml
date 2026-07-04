@@ -71,7 +71,7 @@ jobs:
 
       - name: Run Planner — generate test plan
         run: |
-          npx ts-node -e "
+          npx tsx -e "
             const { TestPlannerAgent } = require('./examples/ch4.1-playwright-agents/planner')
             void (async () => {
               const planner = new TestPlannerAgent()
@@ -94,7 +94,7 @@ jobs:
 
       - name: Run Generator — emit test code
         run: |
-          npx ts-node -e "
+          npx tsx -e "
             const { TestGeneratorAgent } = require('./examples/ch4.1-playwright-agents/planner')
             void (async () => {
               const generator = new TestGeneratorAgent()
@@ -167,14 +167,14 @@ jobs:
         run: npx wait-on http://localhost:5173 --timeout 30000
 
       - name: Planner + Generator
-        run: npx ts-node examples/ch4.1-playwright-agents/planner.ts
+        run: npx tsx examples/ch4.1-playwright-agents/planner.ts
 
       - name: Run generated tests
         run: npx playwright test tests/generated/web-detective.spec.ts --reporter=list
         continue-on-error: true  # generated tests may need one healer pass
 
       - name: Healer pass (if tests failed)
-        run: npx ts-node examples/ch4.1-playwright-agents/healer.ts
+        run: npx tsx examples/ch4.1-playwright-agents/healer.ts
 
       - name: Re-run after healing
         run: npx playwright test tests/generated/web-detective.spec.ts --reporter=list

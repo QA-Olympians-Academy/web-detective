@@ -101,7 +101,7 @@ jobs:
 
       - name: Run agent scenario
         run: |
-          npx ts-node examples/ch7-agent-ci/agent-runner.ts \
+          npx tsx examples/ch7-agent-ci/agent-runner.ts \
             --scenario ${{ matrix.scenario }}
 
       - name: Upload scenario report + traces
@@ -138,7 +138,7 @@ jobs:
 
       - name: Seed and report locator memory
         run: |
-          npx ts-node -e "
+          npx tsx -e "
           const { LocatorStore, WEB_DETECTIVE_LOCATORS } = require('./examples/ch4-self-healing/locator-store')
           const store = new LocatorStore('./locator-memory.json')
           for (const [key, selector] of WEB_DETECTIVE_LOCATORS) store.register(key, selector)

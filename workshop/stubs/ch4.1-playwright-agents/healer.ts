@@ -15,7 +15,7 @@
  *
  * The LLM calls run against a local Ollama server (DeepSeek-R1) — no API key.
  *
- * Run: npx ts-node examples/ch4.1-playwright-agents/healer.ts
+ * Run: npx tsx examples/ch4.1-playwright-agents/healer.ts
  *   (requires a local Ollama server with deepseek-r1:8b — see setup/local-llm-setup.md)
  */
 import { chromium } from 'playwright'

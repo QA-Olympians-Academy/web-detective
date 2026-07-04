@@ -48,7 +48,7 @@ export function findScenario(name: string): Scenario {
  *   Run --all and verify: if logout-flow fails, exit code is still 0.
  *
  * Task B — Run a single scenario from the CLI and observe the reporter output:
- *   npx ts-node examples/ch7-agent-ci/agent-runner.ts --scenario product-search
+ *   npx tsx examples/ch7-agent-ci/agent-runner.ts --scenario product-search
  *   Note the per-step log lines, the step summary table, and the JSON report written
  *   to ./agent-report.json. Open the file and inspect the structure.
  *

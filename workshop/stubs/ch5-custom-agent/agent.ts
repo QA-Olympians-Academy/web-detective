@@ -15,7 +15,7 @@
  * (see prompts.ts): each turn the model returns one `{ "tool", "input" }` object,
  * which you parse, execute against the browser, and feed the result back.
  *
- * Run:  npx ts-node examples/ch5-custom-agent/agent.ts
+ * Run:  npx tsx examples/ch5-custom-agent/agent.ts
  *   (requires a local Ollama server with deepseek-r1:8b — see setup/local-llm-setup.md)
  */
 import { chromium, type Page } from 'playwright'
@@ -75,19 +75,23 @@ export class WebTestAgent {
 }
 
 // ── CLI entrypoint ────────────────────────────────────────────────────────────
+// Only run the demo when this file is the entry point — Ch7 imports WebTestAgent
+// from here, and we don't want that import to kick off a full agent run.
 
-void (async () => {
-  const agent = new WebTestAgent()
+if (process.argv[1]?.endsWith('agent.ts')) {
+  void (async () => {
+    const agent = new WebTestAgent()
 
-  console.log('\n── Running: Full e-commerce verification ──────────────────\n')
-  const result = await agent.run(tasks.fullEcommerce())
+    console.log('\n── Running: Full e-commerce verification ──────────────────\n')
+    const result = await agent.run(tasks.fullEcommerce())
 
-  console.log('\n── Result ──────────────────────────────────────────────────')
-  console.log(`Status  : ${result.passed ? 'PASSED ✓' : 'FAILED ✗'}`)
-  console.log(`Steps   : ${result.toolCalls}`)
-  console.log(`Duration: ${result.durationMs}ms`)
-  console.log(`Summary :\n${result.summary}`)
-})()
+    console.log('\n── Result ──────────────────────────────────────────────────')
+    console.log(`Status  : ${result.passed ? 'PASSED ✓' : 'FAILED ✗'}`)
+    console.log(`Steps   : ${result.toolCalls}`)
+    console.log(`Duration: ${result.durationMs}ms`)
+    console.log(`Summary :\n${result.summary}`)
+  })()
+}
 
 /**
  * WORKSHOP TASKS (Chapter 5 hands-on):
@@ -99,6 +103,6 @@ void (async () => {
  *   Add "When fill() fails, call snapshot() and re-plan" to SYSTEM_PROMPT.
  *
  * Task C — Swap the model without touching agent code:
- *   WORKSHOP_MODEL=qwen2.5-coder:7b npx ts-node examples/ch5-custom-agent/agent.ts
+ *   WORKSHOP_MODEL=qwen2.5-coder:7b npx tsx examples/ch5-custom-agent/agent.ts
  *   Compare how reliably each model sticks to the single-JSON-action protocol.
  */

@@ -65,7 +65,7 @@ jobs:
 
       - name: Verify task-graph exports
         run: |
-          npx ts-node -e "
+          npx tsx -e "
           const { describeGraph, loginTaskGraph } = require('./examples/ch1-foundations/task-graph')
           describeGraph(loginTaskGraph)
           "

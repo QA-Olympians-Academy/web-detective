@@ -60,7 +60,7 @@ jobs:
 
       - name: Seed locator store and verify all entries
         run: |
-          npx ts-node -e "
+          npx tsx -e "
             const { LocatorStore, WEB_DETECTIVE_LOCATORS } = require('./examples/ch4-self-healing/locator-store')
             const store = new LocatorStore('./locator-memory.json')
             for (const [key, selector] of WEB_DETECTIVE_LOCATORS) store.register(key, selector)
@@ -74,7 +74,7 @@ jobs:
 
       - name: Probe selectors against live app
         run: |
-          npx ts-node -e "
+          npx tsx -e "
             const { chromium } = require('playwright')
             const { LocatorStore, WEB_DETECTIVE_LOCATORS } = require('./examples/ch4-self-healing/locator-store')
             void (async () => {

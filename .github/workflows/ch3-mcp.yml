@@ -53,7 +53,7 @@ jobs:
       - name: Start MCP server (5-second boot check)
         # The server listens on stdio — send EOF immediately and verify exit is clean
         run: |
-          timeout 5 npx ts-node examples/ch3-mcp/server.ts < /dev/null || true
+          timeout 5 npx tsx examples/ch3-mcp/server.ts < /dev/null || true
           echo "MCP server boot check passed"
 
   tool-schema-check:
@@ -71,7 +71,7 @@ jobs:
 
       - name: Verify all tools have name + inputSchema
         run: |
-          npx ts-node -e "
+          npx tsx -e "
           const { chromium } = require('playwright')
           // Import is enough to verify the module loads cleanly — server.ts
           // imports happen at module evaluation time

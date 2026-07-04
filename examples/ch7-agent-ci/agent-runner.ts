@@ -5,13 +5,13 @@
  *
  * Usage:
  *   # Run a single scenario (used by GitHub Actions matrix):
- *   npx ts-node examples/ch7-agent-ci/agent-runner.ts --scenario login-flow
+ *   npx tsx examples/ch7-agent-ci/agent-runner.ts --scenario login-flow
  *
  *   # Run all scenarios sequentially (local / smoke test):
- *   npx ts-node examples/ch7-agent-ci/agent-runner.ts --all
+ *   npx tsx examples/ch7-agent-ci/agent-runner.ts --all
  *
  *   # List available scenarios:
- *   npx ts-node examples/ch7-agent-ci/agent-runner.ts --list
+ *   npx tsx examples/ch7-agent-ci/agent-runner.ts --list
  *
  * Exit codes:
  *   0  — all critical scenarios passed
@@ -113,11 +113,11 @@ void (async () => {
  * WORKSHOP TASKS (Chapter 7 hands-on):
  *
  * Task A — Run a single scenario locally (requires a local Ollama server):
- *   npx ts-node examples/ch7-agent-ci/agent-runner.ts --scenario login-flow
+ *   npx tsx examples/ch7-agent-ci/agent-runner.ts --scenario login-flow
  *
  * Task B — List all scenarios, then run all:
- *   npx ts-node examples/ch7-agent-ci/agent-runner.ts --list
- *   npx ts-node examples/ch7-agent-ci/agent-runner.ts --all
+ *   npx tsx examples/ch7-agent-ci/agent-runner.ts --list
+ *   npx tsx examples/ch7-agent-ci/agent-runner.ts --all
  *
  * Task C — Add a new scenario to scenarios.ts and watch it appear in --list
  *   without changing this file or the workflow YAML.

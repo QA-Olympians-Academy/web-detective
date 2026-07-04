@@ -144,7 +144,7 @@ sure Ollama is up and the model is pulled, then run any example:
 ```bash
 ollama serve                       # if not already running as a service
 ollama pull deepseek-r1:8b         # once
-npx ts-node examples/ch5-custom-agent/agent.ts
+npx tsx examples/ch5-custom-agent/agent.ts
 ```
 
 The examples reach Ollama on `http://localhost:11434` via `examples/shared/ollama.ts`, which also
@@ -152,7 +152,7 @@ strips the `<think>…</think>` reasoning wrapper before parsing the model's JSO
 different model, set `WORKSHOP_MODEL` (defaults to `deepseek-r1:8b`):
 
 ```bash
-WORKSHOP_MODEL=llama3.2:3b npx ts-node examples/ch5-custom-agent/agent.ts
+WORKSHOP_MODEL=llama3.2:3b npx tsx examples/ch5-custom-agent/agent.ts
 ```
 
 ---

@@ -1,5 +1,11 @@
+// @ts-nocheck
 /**
- * CH5 — TOOL REGISTRY
+ * CH5 — TOOL REGISTRY (WORKSHOP STUB)
+ *
+ * This is the Chapter 5 exercise file. Define the tool registry live during
+ * the workshop. The full reference implementation is available via:
+ *   git checkout solutions
+ * and is documented in SOLUTIONS.md.
  *
  * An agent's tools are the only way it interacts with the world.
  * Keeping them small and well-typed prevents the LLM from hallucinating
@@ -40,86 +46,17 @@ export interface ToolSpec {
 
 // ── Tool definitions (rendered into the system prompt as JSON actions) ─────────
 
-export const AGENT_TOOLS: ToolSpec[] = [
-  {
-    name: 'navigate',
-    description: 'Navigate the browser to a URL or path.',
-    params: [
-      { name: 'url', description: 'Absolute URL or relative path (e.g. /login)', required: true },
-    ],
-  },
-  {
-    name: 'click',
-    description: 'Click an element. Prefer ARIA-based selectors.',
-    params: [
-      { name: 'selector', description: 'Playwright selector', required: true },
-      { name: 'description', description: 'Human-readable description of what you are clicking', required: true },
-    ],
-  },
-  {
-    name: 'fill',
-    description: 'Type text into an input field.',
-    params: [
-      { name: 'selector', description: 'Playwright selector for the input', required: true },
-      { name: 'value', description: 'Text to type', required: true },
-    ],
-  },
-  {
-    name: 'assert_url',
-    description: 'Verify the current URL contains the expected string.',
-    params: [
-      { name: 'contains', description: 'String the URL must contain', required: true },
-    ],
-  },
-  {
-    name: 'assert_visible',
-    description: 'Verify an element is visible on the page.',
-    params: [
-      { name: 'selector', description: 'Playwright selector', required: true },
-      { name: 'description', description: 'What you expect to see', required: true },
-    ],
-  },
-  {
-    name: 'assert_text',
-    description: 'Verify an element contains the expected text.',
-    params: [
-      { name: 'selector', description: 'Playwright selector', required: true },
-      { name: 'expected', description: 'Text the element must contain', required: true },
-    ],
-  },
-  {
-    name: 'snapshot',
-    description: 'Capture the accessibility tree of the current page. Use this to understand page structure before acting.',
-    params: [],
-  },
-  {
-    name: 'screenshot',
-    description: 'Take a screenshot. Use when you need visual confirmation of page state.',
-    params: [],
-  },
-  {
-    name: 'done',
-    description: 'Signal that the goal has been achieved or definitively failed. Provide a summary of what was verified.',
-    params: [
-      { name: 'summary', description: 'What was accomplished and what assertions passed', required: true },
-      { name: 'passed', description: 'Boolean — did all assertions pass?', required: true },
-    ],
-  },
-]
+// TODO: define one entry per ToolName above, each with a name, description, and
+//       params array (name / description / required). Implement in Chapter 5.
+export const AGENT_TOOLS: ToolSpec[] = []
 
 /**
  * Render the tool registry as a human-readable catalog for the system prompt.
  * DeepSeek reads this to know which actions exist and what parameters each needs.
  */
 export function renderToolCatalog(): string {
-  return AGENT_TOOLS.map(tool => {
-    const params = tool.params.length
-      ? tool.params
-          .map(p => `      - ${p.name}${p.required ? '' : ' (optional)'}: ${p.description}`)
-          .join('\n')
-      : '      (no parameters)'
-    return `- ${tool.name}: ${tool.description}\n    params:\n${params}`
-  }).join('\n')
+  // TODO: turn AGENT_TOOLS into a readable, prompt-friendly listing. Implement in Chapter 5.
+  throw new Error('TODO: implement in Chapter 5')
 }
 
 /**

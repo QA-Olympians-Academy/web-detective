@@ -3,9 +3,10 @@
 # Validates:
 #   • Agent, tools, and prompts modules type-check cleanly
 #   • Agent runs the full e-commerce scenario successfully on main
-#     (gated to main only — each run calls the Anthropic API)
+#     (gated to main only — each run does local CPU inference, which is slow)
 #
-# Requires secret: ANTHROPIC_API_KEY
+# The agent runs against a local Ollama server (DeepSeek-R1) installed on the
+# runner — no API key required.
 
 name: CH5 — Custom Agent
 
@@ -56,7 +57,7 @@ jobs:
         run: |
           npx ts-node -e "
           const { AGENT_TOOLS } = require('./examples/ch5-custom-agent/tools')
-          const missing = AGENT_TOOLS.filter(t => !t.name || !t.description || !t.input_schema)
+          const missing = AGENT_TOOLS.filter(t => !t.name || !t.description || !t.params)
           if (missing.length > 0) {
             console.error('Tools missing required fields:', missing.map(t => t.name))
             process.exit(1)
@@ -85,8 +86,11 @@ jobs:
     name: Agent Smoke Test
     runs-on: ubuntu-latest
     needs: type-check
-    # API calls cost money — only run on main branch pushes
+    # Local CPU inference is slow — only run on main branch pushes
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    timeout-minutes: 30
+    env:
+      WORKSHOP_MODEL: deepseek-r1:1.5b
 
     steps:
       - uses: actions/checkout@v4
@@ -97,6 +101,11 @@ jobs:
       - run: npm ci
       - run: npx playwright install chromium --with-deps
 
+      - name: Setup Ollama (local LLM)
+        uses: ./.github/actions/setup-ollama
+        with:
+          model: ${{ env.WORKSHOP_MODEL }}
+
       - name: Start dev server
         run: npm run dev &
       - name: Wait for dev server
@@ -104,8 +113,6 @@ jobs:
 
       - name: Run full e-commerce agent scenario
         run: npx ts-node examples/ch5-custom-agent/agent.ts
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 
       - name: Upload traces
         uses: actions/upload-artifact@v4

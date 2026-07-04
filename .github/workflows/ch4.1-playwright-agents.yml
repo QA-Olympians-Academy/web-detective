@@ -6,7 +6,8 @@
 #   • Generator emits valid TypeScript (compiles without errors)
 #   • Full Planner → Generator → run pipeline passes on main branch pushes
 #
-# Requires secret: ANTHROPIC_API_KEY (pipeline job only)
+# The Planner/Generator/Healer run against a local Ollama server (DeepSeek-R1)
+# installed on the runner — no API key required.
 
 name: CH4.1 — Playwright Agents
 
@@ -45,6 +46,9 @@ jobs:
     name: Plan & Generator Validation
     runs-on: ubuntu-latest
     needs: type-check
+    timeout-minutes: 30
+    env:
+      WORKSHOP_MODEL: deepseek-r1:1.5b
 
     steps:
       - uses: actions/checkout@v4
@@ -54,6 +58,11 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install chromium --with-deps
+
+      - name: Setup Ollama (local LLM)
+        uses: ./.github/actions/setup-ollama
+        with:
+          model: ${{ env.WORKSHOP_MODEL }}
 
       - name: Start dev server
         run: npm run dev &
@@ -65,7 +74,7 @@ jobs:
           npx ts-node -e "
             const { TestPlannerAgent } = require('./examples/ch4.1-playwright-agents/planner')
             void (async () => {
-              const planner = new TestPlannerAgent(process.env.ANTHROPIC_API_KEY)
+              const planner = new TestPlannerAgent()
               const result = await planner.plan(
                 'http://localhost:5173',
                 ['/login', '/dashboard', '/products'],
@@ -82,15 +91,13 @@ jobs:
               console.log('Plan OK —', result.markdown.split('\n').length, 'lines,', result.snapshots.length, 'pages snapshotted')
             })()
           "
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 
       - name: Run Generator — emit test code
         run: |
           npx ts-node -e "
             const { TestGeneratorAgent } = require('./examples/ch4.1-playwright-agents/planner')
             void (async () => {
-              const generator = new TestGeneratorAgent(process.env.ANTHROPIC_API_KEY)
+              const generator = new TestGeneratorAgent()
               const result = await generator.generate('web-detective-ci')
               if (!result.code || result.code.trim().length < 50) {
                 console.error('Generated code is too short — generator may have failed')
@@ -107,8 +114,6 @@ jobs:
               }
             })()
           "
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 
       - name: Compile generated tests
         run: |
@@ -136,8 +141,11 @@ jobs:
     name: Full Pipeline Smoke Test
     runs-on: ubuntu-latest
     needs: type-check
-    # API calls cost money — only run on main branch pushes
+    # Local CPU inference is slow — only run on main branch pushes
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    timeout-minutes: 40
+    env:
+      WORKSHOP_MODEL: deepseek-r1:1.5b
 
     steps:
       - uses: actions/checkout@v4
@@ -148,6 +156,11 @@ jobs:
       - run: npm ci
       - run: npx playwright install chromium --with-deps
 
+      - name: Setup Ollama (local LLM)
+        uses: ./.github/actions/setup-ollama
+        with:
+          model: ${{ env.WORKSHOP_MODEL }}
+
       - name: Start dev server
         run: npm run dev &
       - name: Wait for dev server
@@ -155,8 +168,6 @@ jobs:
 
       - name: Planner + Generator
         run: npx ts-node examples/ch4.1-playwright-agents/planner.ts
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 
       - name: Run generated tests
         run: npx playwright test tests/generated/web-detective.spec.ts --reporter=list
@@ -164,8 +175,6 @@ jobs:
 
       - name: Healer pass (if tests failed)
         run: npx ts-node examples/ch4.1-playwright-agents/healer.ts
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 
       - name: Re-run after healing
         run: npx playwright test tests/generated/web-detective.spec.ts --reporter=list

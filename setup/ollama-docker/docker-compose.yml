@@ -1,0 +1,25 @@
+# Preconfigured local LLM for the workshop.
+#   docker compose up -d      → serves llama3.1:8b on http://localhost:11434
+# Continue's ollama provider defaults to that URL, so no client config change is needed.
+services:
+  ollama:
+    build: .
+    image: ollama-llama31:workshop
+    container_name: ollama-workshop
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama:/root/.ollama      # persists the baked model across restarts
+    restart: unless-stopped
+    # NVIDIA GPU acceleration — requires the nvidia-container-toolkit on the host.
+    # Uncomment to enable (no effect on Apple Silicon; use the native install there).
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+
+volumes:
+  ollama:

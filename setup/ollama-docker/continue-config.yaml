@@ -1,0 +1,18 @@
+# Continue config for the local Llama 3.1 model.
+# Copy to ~/.continue/config.yaml (native/Docker on host) — Continue hot-reloads.
+#
+# apiBase notes:
+#   • Native Ollama or Docker with -p 11434:11434 on the host → default localhost, leave apiBase commented.
+#   • Inside a dev container talking to a sibling `ollama` compose service → set apiBase: http://ollama:11434
+name: Local Llama 3.1
+version: 0.0.1
+schema: v1
+models:
+  - name: Llama 3.1 8B
+    provider: ollama
+    model: llama3.1:8b
+    # apiBase: http://ollama:11434    # uncomment inside the dev container
+    roles:
+      - chat
+      - edit
+      - apply

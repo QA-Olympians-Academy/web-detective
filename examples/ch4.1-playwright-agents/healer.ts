@@ -1,21 +1,19 @@
+// @ts-nocheck
 /**
- * CH4.1 — PLAYWRIGHT AGENTS: HEALER
+ * CH4.1 EXERCISE STUB — PLAYWRIGHT AGENTS: HEALER
+ *
+ * This is the Chapter 4.1 workshop exercise file. The method bodies have been
+ * removed — you implement them live during the workshop.
+ *
+ * For the full reference implementation:
+ *   git checkout solutions
+ * and see SOLUTIONS.md.
  *
  * Mirrors Playwright's built-in Healer agent: when generated tests fail, the
  * healer replays each failing test, inspects the current UI, rewrites the
  * broken test block, and re-runs the suite — repeating until green or giving up.
  *
- * How this differs from the selector-level healer in CH4:
- *   CH4 Healer    — fixes one broken locator string, persists to LocatorStore
- *   CH4.1 Healer  — rewrites an entire test() block in the source file,
- *                   then re-runs the suite to verify the patch
- *
- * Healer loop (up to MAX_ROUNDS):
- *   1. Run the test file, capture Playwright JSON output
- *   2. Parse each failing test name + error message
- *   3. Extract the failing test() block from source
- *   4. Ask the local model to rewrite that block given the error and a fresh ariaSnapshot
- *   5. Apply the patch in-place and proceed to the next round
+ * The LLM calls run against a local Ollama server (DeepSeek-R1) — no API key.
  *
  * Run: npx tsx examples/ch4.1-playwright-agents/healer.ts
  *   (requires a local Ollama server with deepseek-r1:8b — see setup/local-llm-setup.md)
@@ -65,156 +63,39 @@ export class TestHealerAgent {
    * Run the test file, repair failures, repeat until green or MAX_ROUNDS exceeded.
    */
   async heal(testFile: string, baseUrl: string): Promise<HealRound[]> {
-    const rounds: HealRound[] = []
-
-    for (let round = 1; round <= MAX_ROUNDS; round++) {
-      console.log(`\n── Heal round ${round}/${MAX_ROUNDS} ─────────────────────────────────`)
-
-      const { passed, failures } = this.runTests(testFile)
-
-      if (passed) {
-        rounds.push({ round, failures: [], patched: [], allPassed: true })
-        console.log('  ✓ All tests passing')
-        break
-      }
-
-      console.log(`  ✗ ${failures.length} test(s) failing`)
-      const patched: string[] = []
-
-      for (const failure of failures) {
-        const snapshot = await this.liveSnapshot(baseUrl, failure.file)
-        const fixed = await this.repairTest(failure, snapshot)
-
-        if (fixed) {
-          this.applyPatch(failure.file, failure.snippet, fixed)
-          patched.push(failure.testName)
-          console.log(`  ✓ Patched: ${failure.testName}`)
-        } else {
-          console.warn(`  ✗ Could not patch: ${failure.testName}`)
-        }
-      }
-
-      rounds.push({ round, failures, patched, allPassed: false })
-      if (patched.length === 0) break  // no progress — bail out
-    }
-
-    return rounds
+    throw new Error('TODO: implement in Chapter 4.1')
   }
 
   // ── Test runner ──────────────────────────────────────────────────────────
 
   private runTests(testFile: string): { passed: boolean; failures: TestFailure[] } {
-    const result = spawnSync(
-      'npx',
-      ['playwright', 'test', testFile, '--reporter=json'],
-      { encoding: 'utf-8', stdio: 'pipe' },
-    )
-
-    if (result.status === 0) return { passed: true, failures: [] }
-    return { passed: false, failures: this.parseFailures(result.stdout) }
+    throw new Error('TODO: implement in Chapter 4.1')
   }
 
   private parseFailures(jsonOutput: string): TestFailure[] {
-    let report: PWReport
-    try {
-      report = JSON.parse(jsonOutput) as PWReport
-    } catch {
-      return []
-    }
-
-    const failures: TestFailure[] = []
-    for (const suite of report.suites ?? []) {
-      for (const spec of suite.specs ?? []) {
-        const isFailed = spec.tests.some(t =>
-          t.results.some(r => r.status === 'failed'),
-        )
-        if (!isFailed) continue
-
-        const error =
-          spec.tests
-            .flatMap(t => t.results)
-            .find(r => r.error)
-            ?.error?.message ?? ''
-
-        failures.push({
-          file: spec.file,
-          testName: spec.title,
-          error,
-          snippet: this.extractTestBlock(spec.file, spec.title),
-        })
-      }
-    }
-    return failures
+    throw new Error('TODO: implement in Chapter 4.1')
   }
 
   // ── Source manipulation ───────────────────────────────────────────────────
 
   private extractTestBlock(filePath: string, testName: string): string {
-    if (!fs.existsSync(filePath)) return ''
-    const source = fs.readFileSync(filePath, 'utf-8')
-    const escaped = testName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-    const pattern = new RegExp(
-      `test\\((['"\`])${escaped}\\1[\\s\\S]*?\\n\\}\\)`,
-      'm',
-    )
-    return source.match(pattern)?.[0] ?? ''
+    throw new Error('TODO: implement in Chapter 4.1')
   }
 
   private applyPatch(filePath: string, original: string, fixed: string): void {
-    if (!original || !fs.existsSync(filePath)) return
-    const source = fs.readFileSync(filePath, 'utf-8')
-    fs.writeFileSync(filePath, source.replace(original, fixed), 'utf-8')
+    throw new Error('TODO: implement in Chapter 4.1')
   }
 
   // ── Live DOM snapshot at the point of failure ─────────────────────────────
 
   private async liveSnapshot(baseUrl: string, _filePath: string): Promise<string> {
-    const browser = await chromium.launch({ headless: true })
-    const context = await browser.newContext({ baseURL: baseUrl })
-    const page = await context.newPage()
-
-    await page.goto(baseUrl, { waitUntil: 'domcontentloaded' })
-    const snapshot = (await page.locator('body').ariaSnapshot()).slice(0, 3000)
-
-    await browser.close()
-    return snapshot
+    throw new Error('TODO: implement in Chapter 4.1')
   }
 
   // ── LLM: test repair ─────────────────────────────────────────────────────
 
   private async repairTest(failure: TestFailure, liveSnapshot: string): Promise<string | null> {
-    if (!failure.snippet) return null
-
-    const text = await complete(
-      `You are a Playwright test healer. You receive a failing test() block, its
-error message, and the current accessibility tree of the page.
-
-Rewrite the test to fix the failure.
-
-Rules:
-- Prefer ARIA locators: getByRole, getByLabel, getByText, getByPlaceholder
-- Replace broken CSS selectors with stable ARIA equivalents from the snapshot
-- Add waitForLoadState() or waitForSelector() if the error suggests a timing issue
-- Return ONLY the fixed test() block — same outer structure, no markdown fences
-- Keep the original test name string unchanged`,
-      `Failing test:
-\`\`\`typescript
-${failure.snippet}
-\`\`\`
-
-Error:
-${failure.error}
-
-Current page accessibility tree:
-${liveSnapshot}
-
-Return the fixed test() block.`,
-      { maxTokens: 2048 },
-    )
-
-    const fenced = text.match(/```(?:typescript|ts)?\n([\s\S]*?)```/)
-    const block = (fenced ? fenced[1].trim() : text.trim())
-    return block.startsWith('test(') ? block : null
+    throw new Error('TODO: implement in Chapter 4.1')
   }
 }
 

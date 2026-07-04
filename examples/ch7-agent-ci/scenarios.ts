@@ -1,5 +1,12 @@
+// @ts-nocheck
 /**
- * CH7 — AGENT SCENARIOS
+ * CH7 EXERCISE STUB — AGENT SCENARIOS
+ *
+ * This is the Chapter 7 exercise file. Implement the bodies live during the
+ * workshop. For the full reference implementation, run `git checkout solutions`
+ * and see SOLUTIONS.md.
+ *
+ * ─────────────────────────────────────────────────────────────────────────────
  *
  * Each scenario is one agent run: a goal string, a name for reporting,
  * and a 'critical' flag that determines whether failure blocks the pipeline.
@@ -23,37 +30,12 @@ export interface Scenario {
   critical: boolean
 }
 
-export const SCENARIOS: Scenario[] = [
-  {
-    name: 'auth-redirect',
-    task: tasks.authRedirect(),
-    critical: true,
-  },
-  {
-    name: 'login-flow',
-    task: tasks.loginFlow(),
-    critical: true,
-  },
-  {
-    name: 'product-search',
-    task: tasks.productSearch('Electronics', 6),
-    critical: true,
-  },
-  {
-    name: 'full-ecommerce',
-    task: tasks.fullEcommerce(),
-    critical: true,
-  },
-]
+// TODO: populate with the workshop scenarios (auth-redirect, login-flow, …)
+export const SCENARIOS: Scenario[] = []
 
 /** Look up a scenario by name — used by the CLI runner */
 export function findScenario(name: string): Scenario {
-  const s = SCENARIOS.find(s => s.name === name)
-  if (!s) {
-    const valid = SCENARIOS.map(s => s.name).join(', ')
-    throw new Error(`Unknown scenario "${name}". Valid values: ${valid}`)
-  }
-  return s
+  throw new Error('TODO: implement in Chapter 7')
 }
 
 /**

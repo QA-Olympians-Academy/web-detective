@@ -1,29 +1,20 @@
+// @ts-nocheck
 /**
- * CH4.1 — PLAYWRIGHT AGENTS: PLANNER + GENERATOR
+ * CH4.1 EXERCISE STUB — PLAYWRIGHT AGENTS: PLANNER + GENERATOR
+ *
+ * This is the Chapter 4.1 workshop exercise file. The method bodies have been
+ * removed — you implement them live during the workshop.
+ *
+ * For the full reference implementation:
+ *   git checkout solutions
+ * and see SOLUTIONS.md.
  *
  * Mirrors Playwright's built-in Planner and Generator agents.
  *
- * Playwright ships three built-in AI agents, initialized with:
- *   npx playwright init-agents --loop=claude
- *
  *   • Planner   — explores the running app, produces a Markdown test plan (specs/)
  *   • Generator — transforms plans into runnable Playwright test files (tests/)
- *   • Healer    — executes tests, auto-repairs failures, re-runs until green
  *
- * This file implements Planner and Generator programmatically so you can see
- * the internals and wire them into any pipeline.
- *
- * Planner loop:
- *   1. Launch browser, seed login, navigate each route
- *   2. Capture ariaSnapshot of each page (capped for token budget)
- *   3. Ask the local model to emit a structured Markdown test plan
- *   4. Save plan to specs/<name>.md
- *
- * Generator loop:
- *   1. Read plan from specs/<name>.md
- *   2. Ask the local model to emit runnable Playwright TypeScript test code
- *   3. Lint for potentially hallucinated CSS selectors
- *   4. Write test file to tests/generated/<name>.spec.ts
+ * The LLM calls run against a local Ollama server (DeepSeek-R1) — no API key.
  *
  * Run: npx tsx examples/ch4.1-playwright-agents/planner.ts
  *   (requires a local Ollama server with deepseek-r1:8b — see setup/local-llm-setup.md)
@@ -60,84 +51,29 @@ export class TestPlannerAgent {
    * Explore the app at baseUrl, produce a Markdown test plan, and save it.
    */
   async plan(baseUrl: string, routes: string[], planName: string): Promise<PlannerResult> {
-    const snapshots = await this.exploreRoutes(baseUrl, routes)
-    const markdown = await this.generatePlan(planName, snapshots)
-    const planPath = this.writePlan(planName, markdown)
-    return { planPath, markdown, snapshots }
+    throw new Error('TODO: implement in Chapter 4.1')
   }
 
   // ── Exploration ──────────────────────────────────────────────────────────
 
   private async exploreRoutes(baseUrl: string, routes: string[]): Promise<PageSnapshot[]> {
-    const browser = await chromium.launch({ headless: true })
-    const context = await browser.newContext({ baseURL: baseUrl })
-    const page = await context.newPage()
-
-    await this.seedLogin(page, baseUrl)
-
-    const snapshots: PageSnapshot[] = []
-    for (const route of routes) {
-      await page.goto(route, { waitUntil: 'domcontentloaded' })
-      await page.waitForTimeout(400)
-
-      snapshots.push({
-        route,
-        title: await page.title(),
-        ariaTree: (await page.locator('body').ariaSnapshot()).slice(0, 3000),
-      })
-
-      console.log(`  [planner] Snapshotted ${route}`)
-    }
-
-    await browser.close()
-    return snapshots
+    throw new Error('TODO: implement in Chapter 4.1')
   }
 
   private async seedLogin(page: Page, baseUrl: string): Promise<void> {
-    await page.goto(`${baseUrl}/login`, { waitUntil: 'domcontentloaded' })
-    await page.getByLabel(/email address/i).fill('admin@shop.com')
-    await page.getByLabel(/password/i).fill('password123')
-    await page.getByRole('button', { name: /sign in/i }).click()
-    await page.waitForURL('**/dashboard')
+    throw new Error('TODO: implement in Chapter 4.1')
   }
 
   // ── LLM: plan generation ─────────────────────────────────────────────────
 
   private async generatePlan(planName: string, snapshots: PageSnapshot[]): Promise<string> {
-    const snapshotBlock = snapshots
-      .map(s => `### ${s.route} — ${s.title}\n\`\`\`\n${s.ariaTree}\n\`\`\``)
-      .join('\n\n')
-
-    return complete(
-      `You are a Playwright test planning agent. Given accessibility snapshots of a
-web application, produce a structured Markdown test plan.
-
-Format each test case as:
-## <Feature Area>
-### <Test Name>
-- **Steps**: numbered action steps
-- **Expected**: what should be true after each step
-- **Selectors hint**: ARIA locators observed in the snapshot
-
-Cover happy paths, edge cases, and key user journeys. Be concise but precise —
-this plan feeds directly into a code generator that must produce runnable tests.`,
-      `App: ${planName}
-Generate a Playwright test plan covering all pages below.
-
-${snapshotBlock}`,
-      { maxTokens: 2048 },
-    )
+    throw new Error('TODO: implement in Chapter 4.1')
   }
 
   // ── Persistence ──────────────────────────────────────────────────────────
 
   private writePlan(planName: string, markdown: string): string {
-    const dir = path.resolve('./specs')
-    fs.mkdirSync(dir, { recursive: true })
-    const planPath = path.join(dir, `${planName}.md`)
-    fs.writeFileSync(planPath, markdown, 'utf-8')
-    console.log(`  [planner] Saved plan → ${planPath}`)
-    return planPath
+    throw new Error('TODO: implement in Chapter 4.1')
   }
 }
 
@@ -148,38 +84,13 @@ export class TestGeneratorAgent {
    * Read a plan from specs/<name>.md, emit Playwright test code, write to tests/generated/.
    */
   async generate(planName: string): Promise<GeneratorResult> {
-    const planPath = path.resolve(`./specs/${planName}.md`)
-    if (!fs.existsSync(planPath)) throw new Error(`Plan not found: ${planPath}`)
-
-    const plan = fs.readFileSync(planPath, 'utf-8')
-    const code = await this.generateCode(planName, plan)
-    const selectorWarnings = this.lintSelectors(code)
-    const testPath = this.writeTest(planName, code)
-
-    return { testPath, code, selectorWarnings }
+    throw new Error('TODO: implement in Chapter 4.1')
   }
 
   // ── LLM: code generation ─────────────────────────────────────────────────
 
   private async generateCode(planName: string, plan: string): Promise<string> {
-    const text = await complete(
-      `You are a Playwright test code generator. Convert a Markdown test plan into
-runnable TypeScript Playwright tests.
-
-Rules:
-- Import from '@playwright/test' (not a custom fixtures path)
-- Use ARIA locators: getByRole, getByLabel, getByText, getByPlaceholder
-- Group tests with test.describe matching the plan's ## headings
-- Each ### test case becomes one test() block
-- Add await page.waitForLoadState('domcontentloaded') after navigation
-- Use baseURL 'http://localhost:5173' in the config or page.goto calls
-- Return ONLY the TypeScript code, no markdown fences, no explanation`,
-      `Convert this test plan for "${planName}" into Playwright TypeScript tests:\n\n${plan}`,
-      { maxTokens: 4096 },
-    )
-
-    const fenced = text.match(/```(?:typescript|ts)?\n([\s\S]*?)```/)
-    return fenced ? fenced[1].trim() : text.trim()
+    throw new Error('TODO: implement in Chapter 4.1')
   }
 
   // ── Selector lint ────────────────────────────────────────────────────────
@@ -189,26 +100,13 @@ Rules:
    * These aren't guaranteed broken, but are worth reviewing before committing.
    */
   private lintSelectors(code: string): string[] {
-    const cssPattern = /\.locator\(['"]([.#][^'"]+)['"]\)/g
-    const warnings: string[] = []
-    let match: RegExpExecArray | null
-
-    while ((match = cssPattern.exec(code)) !== null) {
-      warnings.push(`CSS selector (consider ARIA alternative): ${match[1]}`)
-    }
-
-    return warnings
+    throw new Error('TODO: implement in Chapter 4.1')
   }
 
   // ── Persistence ──────────────────────────────────────────────────────────
 
   private writeTest(planName: string, code: string): string {
-    const dir = path.resolve('./tests/generated')
-    fs.mkdirSync(dir, { recursive: true })
-    const testPath = path.join(dir, `${planName}.spec.ts`)
-    fs.writeFileSync(testPath, code, 'utf-8')
-    console.log(`  [generator] Saved test → ${testPath}`)
-    return testPath
+    throw new Error('TODO: implement in Chapter 4.1')
   }
 }
 

@@ -1,0 +1,43 @@
+name: 'Setup Ollama'
+description: 'Install Ollama, start the local server, and pull a model so agent examples can run with no API key.'
+
+inputs:
+  model:
+    description: 'Ollama model to pull (must match WORKSHOP_MODEL used by the job).'
+    required: false
+    # A small DeepSeek-R1 build — GitHub-hosted runners are CPU-only (2 cores), so
+    # the 8b default used locally is too slow here. 1.5b keeps CI runnable.
+    default: 'deepseek-r1:1.5b'
+
+runs:
+  using: composite
+  steps:
+    - name: Install Ollama
+      shell: bash
+      run: curl -fsSL https://ollama.com/install.sh | sh
+
+    - name: Start Ollama server and wait for it
+      shell: bash
+      run: |
+        # The install script starts a systemd service on ubuntu-latest; if for any
+        # reason it isn't listening, start the server manually.
+        if ! curl -sf http://localhost:11434/api/tags >/dev/null 2>&1; then
+          (ollama serve > /tmp/ollama.log 2>&1 &)
+        fi
+        for i in $(seq 1 60); do
+          if curl -sf http://localhost:11434/api/tags >/dev/null 2>&1; then
+            echo "Ollama is ready"
+            ollama --version
+            exit 0
+          fi
+          sleep 2
+        done
+        echo "::error::Ollama did not become ready on port 11434"
+        cat /tmp/ollama.log 2>/dev/null || true
+        exit 1
+
+    - name: Pull model
+      shell: bash
+      # Not cached: the systemd service stores models under the ollama service user,
+      # which makes actions/cache brittle. A ~1 GB pull keeps this simple and reliable.
+      run: ollama pull "${{ inputs.model }}"

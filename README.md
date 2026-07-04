@@ -71,7 +71,7 @@ npx ts-node -e "import { describeGraph, loginTaskGraph } from './examples/ch1-fo
 
 ---
 
-### Ch2 — WebdriverIO & Playwright as the Execution Layer
+### Ch2 — Playwright as the Execution Layer
 
 **Files:** [examples/ch2-execution-layer/](examples/ch2-execution-layer/)
 
@@ -187,14 +187,15 @@ To trigger healing, break a selector and run the healer:
 # 2. Rebuild
 npm run build
 
-# 3. Run the self-healer (requires ANTHROPIC_API_KEY)
-ANTHROPIC_API_KEY=sk-... npx ts-node -e "
+# 3. Run the self-healer (requires a running Ollama server — see setup/local-llm-setup.md)
+#    It asks the local model (DeepSeek-R1) for alternatives — no API key needed.
+npx ts-node -e "
 import { chromium } from 'playwright'
 import { LocatorStore } from './examples/ch4-self-healing/locator-store.ts'
 import { SelfHealingAgent } from './examples/ch4-self-healing/self-healer.ts'
 
 const store = new LocatorStore('./locator-memory.json')
-const healer = new SelfHealingAgent(store, process.env.ANTHROPIC_API_KEY)
+const healer = new SelfHealingAgent(store)
 const browser = await chromium.launch({ headless: true })
 const page = await (await browser.newContext({ baseURL: 'http://localhost:5173' })).newPage()
 await page.goto('/login')
@@ -226,14 +227,16 @@ This chapter covers Playwright's three built-in AI agents that form an end-to-en
 npx playwright init-agents --loop=claude
 
 # Run the full Planner → Generator pipeline
-ANTHROPIC_API_KEY=sk-... npx ts-node examples/ch4.1-playwright-agents/planner.ts
+npx ts-node examples/ch4.1-playwright-agents/planner.ts
 # → writes specs/web-detective.md
 # → writes tests/generated/web-detective.spec.ts
 
 # Run the TestHealerAgent on a failing generated test
-ANTHROPIC_API_KEY=sk-... npx ts-node examples/ch4.1-playwright-agents/healer.ts
+npx ts-node examples/ch4.1-playwright-agents/healer.ts
 # → reruns failing tests, rewrites broken test() blocks, re-runs (max 3 rounds)
 ```
+
+> These agents run against a local model — start Ollama first (see [setup/local-llm-setup.md](setup/local-llm-setup.md)). No API key needed.
 
 **Healing levels comparison:**
 
@@ -263,17 +266,14 @@ Use the `/pw-plan` skill to run the full pipeline from Claude Code:
 
 **Files:** [examples/ch5-custom-agent/](examples/ch5-custom-agent/)
 
-Requires an Anthropic API key:
+Requires a running Ollama server with `deepseek-r1:8b` pulled — see [setup/local-llm-setup.md](setup/local-llm-setup.md). Runs locally and free, no API key:
 
 ```bash
-export ANTHROPIC_API_KEY=sk-ant-...
-
-# Install the Anthropic SDK if not already present
-npm install @anthropic-ai/sdk
-
 # Run the full e-commerce verification agent
 npx ts-node examples/ch5-custom-agent/agent.ts
 ```
+
+Because DeepSeek-R1 is a local reasoning model with no native tool calling, the agent drives its tools via a prompt-based JSON action protocol — the model returns one `{ "tool", "input" }` object per turn.
 
 The agent will:
 1. Navigate to the app
@@ -336,9 +336,9 @@ npx ts-node examples/ch7-agent-ci/agent-runner.ts --list
 
 #### Run a single scenario locally
 
-```bash
-export ANTHROPIC_API_KEY=sk-ant-...
+Requires a running Ollama server (see [setup/local-llm-setup.md](setup/local-llm-setup.md)) — no API key.
 
+```bash
 npx ts-node examples/ch7-agent-ci/agent-runner.ts --scenario login-flow
 npx ts-node examples/ch7-agent-ci/agent-runner.ts --scenario auth-redirect
 npx ts-node examples/ch7-agent-ci/agent-runner.ts --scenario product-search
@@ -348,7 +348,7 @@ npx ts-node examples/ch7-agent-ci/agent-runner.ts --scenario full-ecommerce
 #### Run all scenarios sequentially
 
 ```bash
-ANTHROPIC_API_KEY=sk-ant-... npx ts-node examples/ch7-agent-ci/agent-runner.ts --all
+npx ts-node examples/ch7-agent-ci/agent-runner.ts --all
 ```
 
 Each run produces:
@@ -372,15 +372,12 @@ Each chapter has its own workflow file, scoped to its `paths`:
 | [ch6-skills.yml](.github/workflows/ch6-skills.yml) | `.claude/skills/**` | Frontmatter validation, `argument-hint` presence check |
 | [ch7-agent-ci.yml](.github/workflows/ch7-agent-ci.yml) | Every push/PR | Full pipeline: Playwright + agentic matrix + locator health |
 
-#### Enable the agentic jobs (Ch5 + Ch7)
+#### Running the agentic jobs (Ch5 + Ch7) in CI
 
-Add your API key as a repository secret:
-
-```
-Settings → Secrets and variables → Actions → New repository secret
-Name:  ANTHROPIC_API_KEY
-Value: sk-ant-...
-```
+Locally the agentic examples talk to Ollama, so they need no secret. Running them
+inside GitHub Actions requires Ollama to be available on the runner — either a
+self-hosted runner with Ollama installed, or an Ollama setup/model-pull step added
+to the workflow. This is left as an exercise.
 
 #### Add a new scenario
 
@@ -439,7 +436,8 @@ web-detective/
 │   ├── ch4-self-healing/         # locator-store.ts, self-healer.ts
 │   ├── ch4.1-playwright-agents/  # planner.ts, healer.ts  ← NEW
 │   ├── ch5-custom-agent/         # agent.ts, tools.ts, prompts.ts
-│   └── ch7-agent-ci/             # agent-runner.ts, reporter.ts, scenarios.ts
+│   ├── ch7-agent-ci/             # agent-runner.ts, reporter.ts, scenarios.ts
+│   └── shared/                   # ollama.ts — local LLM client  ← NEW
 ├── specs/                        # AI-generated test plans (output of Ch4.1 Planner)
 ├── tests/generated/              # AI-generated test code (output of Ch4.1 Generator)
 ├── .claude/skills/               # Claude Code custom slash commands
@@ -468,6 +466,6 @@ web-detective/
 - **React Router v6** — client-side routing
 - **Recharts** — bar and line charts
 - **Playwright** — test suite + execution layer + MCP server + built-in AI agents (Ch4.1)
-- **Anthropic SDK** — LLM reasoning in Ch4 (self-healing), Ch5 (custom agent), Ch4.1 (planner/generator/healer)
+- **Ollama + DeepSeek-R1** — local LLM reasoning (no API key) in Ch4, Ch4.1, Ch5, Ch7; all calls go through examples/shared/ollama.ts
 - **@modelcontextprotocol/sdk** — custom MCP server in Ch3
 - **python-pptx** — presentation build script

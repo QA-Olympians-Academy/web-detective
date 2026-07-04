@@ -1,7 +1,7 @@
 # CLAUDE.md — web-detective
 
 Workshop repo for **"Rise of the Web Agents"** — an 8-hour tutorial on agentic test automation
-using Playwright, Anthropic SDK, MCP, and GitHub Actions.
+using Playwright, a local LLM (Ollama + DeepSeek-R1), MCP, and GitHub Actions.
 
 ---
 
@@ -17,7 +17,9 @@ npx playwright test                              # full suite
 npx playwright test tests/auth.spec.ts --headed  # single file, headed
 npx tsc --noEmit -p tsconfig.examples.json       # type-check all examples
 
-# Chapter examples (requires ANTHROPIC_API_KEY)
+# Chapter examples (requires a local Ollama server — see setup/local-llm-setup.md)
+ollama serve &                       # if not already running (port 11434)
+ollama pull deepseek-r1:8b           # one time, ~5 GB
 npx ts-node examples/ch5-custom-agent/agent.ts
 npx ts-node examples/ch4.1-playwright-agents/planner.ts
 npx ts-node examples/ch7-agent-ci/agent-runner.ts --scenario login-flow
@@ -124,8 +126,9 @@ Rebuild with `python3 build_presentation.py` (requires `pip install python-pptx`
 ## Key invariants
 
 - Always start the dev server (`npm run dev`) before running any chapter example or Playwright test.
-- `ANTHROPIC_API_KEY` must be set in the shell for any LLM-backed example (Ch4, Ch4.1, Ch5, Ch7).
-- `WORKSHOP_MODEL` overrides the model for all LLM-backed examples (default `claude-haiku-4-5`, cheapest tier). Set e.g. `WORKSHOP_MODEL=claude-sonnet-4-6` for a higher-intelligence demo. The Ch5/Ch7 agent loop also caches the system prompt + growing conversation (`cache_control: ephemeral`) — cache reads cost ~0.1x; the per-turn `tokens —` log shows `read` climbing once it's warm.
+- A local **Ollama** server (port 11434) with the model pulled must be running for any LLM-backed example (Ch4, Ch4.1, Ch5, Ch7). No API key — everything runs locally and free. See `setup/local-llm-setup.md`.
+- `WORKSHOP_MODEL` overrides the model for all LLM-backed examples (default `deepseek-r1:8b`). Use `WORKSHOP_MODEL=deepseek-r1:1.5b` on low-RAM machines, or `WORKSHOP_MODEL=qwen2.5-coder:7b` for stronger JSON adherence in the agentic chapters. All LLM calls go through `examples/shared/ollama.ts`, which strips DeepSeek-R1's `<think>…</think>` output and parses JSON actions. The per-turn `tokens —` log shows Ollama's prompt/output token counts.
+- DeepSeek-R1 has no native tool-calling, so Ch5/Ch7 use a **prompt-based JSON action protocol** (one `{ "tool", "input" }` object per turn), not provider tool schemas. There is no prompt caching (local inference).
 - The `locators.json` file produced by Ch4 is gitignored — it is runtime state, not source.
 - Generated specs in `tests/generated/` are intentionally imperfect; the Ch4.1 Healer cleans them up.
 - Prefer ARIA selectors (`getByRole`, `getByLabel`, `getByText`) everywhere. No CSS or XPath selectors in new code.

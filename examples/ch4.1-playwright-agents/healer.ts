@@ -14,16 +14,17 @@
  *   1. Run the test file, capture Playwright JSON output
  *   2. Parse each failing test name + error message
  *   3. Extract the failing test() block from source
- *   4. Ask Claude to rewrite that block given the error and a fresh ariaSnapshot
+ *   4. Ask the local model to rewrite that block given the error and a fresh ariaSnapshot
  *   5. Apply the patch in-place and proceed to the next round
  *
- * Run: ANTHROPIC_API_KEY=sk-... npx ts-node examples/ch4.1-playwright-agents/healer.ts
+ * Run: npx ts-node examples/ch4.1-playwright-agents/healer.ts
+ *   (requires a local Ollama server with deepseek-r1:8b — see setup/local-llm-setup.md)
  */
-import Anthropic from '@anthropic-ai/sdk'
 import { chromium } from 'playwright'
 import { spawnSync } from 'child_process'
 import * as fs from 'fs'
 import * as path from 'path'
+import { complete } from '../shared/ollama'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -60,12 +61,6 @@ interface PWReport {
 const MAX_ROUNDS = 3
 
 export class TestHealerAgent {
-  private readonly client: Anthropic
-
-  constructor(apiKey?: string) {
-    this.client = new Anthropic({ apiKey })
-  }
-
   /**
    * Run the test file, repair failures, repeat until green or MAX_ROUNDS exceeded.
    */
@@ -190,10 +185,8 @@ export class TestHealerAgent {
   private async repairTest(failure: TestFailure, liveSnapshot: string): Promise<string | null> {
     if (!failure.snippet) return null
 
-    const response = await this.client.messages.create({
-      model: process.env.WORKSHOP_MODEL ?? 'claude-haiku-4-5',
-      max_tokens: 1024,
-      system: `You are a Playwright test healer. You receive a failing test() block, its
+    const text = await complete(
+      `You are a Playwright test healer. You receive a failing test() block, its
 error message, and the current accessibility tree of the page.
 
 Rewrite the test to fix the failure.
@@ -204,10 +197,7 @@ Rules:
 - Add waitForLoadState() or waitForSelector() if the error suggests a timing issue
 - Return ONLY the fixed test() block — same outer structure, no markdown fences
 - Keep the original test name string unchanged`,
-      messages: [
-        {
-          role: 'user',
-          content: `Failing test:
+      `Failing test:
 \`\`\`typescript
 ${failure.snippet}
 \`\`\`
@@ -219,11 +209,9 @@ Current page accessibility tree:
 ${liveSnapshot}
 
 Return the fixed test() block.`,
-        },
-      ],
-    })
+      { maxTokens: 1024 },
+    )
 
-    const text = response.content[0].type === 'text' ? response.content[0].text : ''
     const fenced = text.match(/```(?:typescript|ts)?\n([\s\S]*?)```/)
     const block = (fenced ? fenced[1].trim() : text.trim())
     return block.startsWith('test(') ? block : null
@@ -233,7 +221,7 @@ Return the fixed test() block.`,
 // ── CLI entrypoint ────────────────────────────────────────────────────────────
 
 void (async () => {
-  const healer = new TestHealerAgent(process.env.ANTHROPIC_API_KEY)
+  const healer = new TestHealerAgent()
 
   const testFile = path.resolve('./tests/generated/web-detective.spec.ts')
   if (!fs.existsSync(testFile)) {
@@ -263,7 +251,7 @@ void (async () => {
  * Task A — Introduce a deliberate failure, watch the healer fix it:
  *   Open tests/generated/web-detective.spec.ts.
  *   Change one getByRole() call to a broken selector like page.locator('.gone').
- *   Run this file — observe the healer extract the block, ask Claude, and patch it.
+ *   Run this file — observe the healer extract the block, ask the local model, and patch it.
  *
  * Task B — Compare the two healing strategies:
  *   CH4 healer targets broken selector strings stored in LocatorStore.
@@ -276,6 +264,6 @@ void (async () => {
  *   Compare its patches to what this programmatic healer produces.
  *
  * Task D — Guard against infinite loops:
- *   What happens if Claude's patch introduces a new failure?
+ *   What happens if the model's patch introduces a new failure?
  *   Add a check that rejects patches that re-introduce the same error message.
  */

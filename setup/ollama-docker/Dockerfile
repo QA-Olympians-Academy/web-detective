@@ -1,13 +1,13 @@
-# Ollama with Llama 3.1 8B baked in — ship a ready-to-run local LLM.
+# Ollama with DeepSeek-R1 8B baked in — ship a ready-to-run local LLM.
 #
-# Build:  docker build -t ollama-llama31:workshop .
-# Run:    docker run -d -p 11434:11434 ollama-llama31:workshop
+# Build:  docker build -t ollama-deepseek-r1:workshop .
+# Run:    docker run -d -p 11434:11434 ollama-deepseek-r1:workshop
 #
 # The model is pulled at BUILD time (not first run), so the resulting image
-# (~5 GB) starts serving llama3.1:8b immediately with no download for students.
+# (~5 GB) starts serving deepseek-r1:8b immediately with no download for students.
 FROM ollama/ollama:latest
 
-ARG MODEL=llama3.1:8b
+ARG MODEL=deepseek-r1:8b
 
 # Start the server, wait for it, pull the model, stop the server.
 # The model lands in /root/.ollama and is committed into the image layer.

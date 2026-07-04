@@ -16,21 +16,22 @@
  * Planner loop:
  *   1. Launch browser, seed login, navigate each route
  *   2. Capture ariaSnapshot of each page (capped for token budget)
- *   3. Ask Claude to emit a structured Markdown test plan
+ *   3. Ask the local model to emit a structured Markdown test plan
  *   4. Save plan to specs/<name>.md
  *
  * Generator loop:
  *   1. Read plan from specs/<name>.md
- *   2. Ask Claude to emit runnable Playwright TypeScript test code
+ *   2. Ask the local model to emit runnable Playwright TypeScript test code
  *   3. Lint for potentially hallucinated CSS selectors
  *   4. Write test file to tests/generated/<name>.spec.ts
  *
- * Run: ANTHROPIC_API_KEY=sk-... npx ts-node examples/ch4.1-playwright-agents/planner.ts
+ * Run: npx ts-node examples/ch4.1-playwright-agents/planner.ts
+ *   (requires a local Ollama server with deepseek-r1:8b — see setup/local-llm-setup.md)
  */
-import Anthropic from '@anthropic-ai/sdk'
 import { chromium, type Page } from 'playwright'
 import * as fs from 'fs'
 import * as path from 'path'
+import { complete } from '../shared/ollama'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -55,12 +56,6 @@ export interface GeneratorResult {
 // ── Planner ───────────────────────────────────────────────────────────────────
 
 export class TestPlannerAgent {
-  private readonly client: Anthropic
-
-  constructor(apiKey?: string) {
-    this.client = new Anthropic({ apiKey })
-  }
-
   /**
    * Explore the app at baseUrl, produce a Markdown test plan, and save it.
    */
@@ -113,10 +108,8 @@ export class TestPlannerAgent {
       .map(s => `### ${s.route} — ${s.title}\n\`\`\`\n${s.ariaTree}\n\`\`\``)
       .join('\n\n')
 
-    const response = await this.client.messages.create({
-      model: process.env.WORKSHOP_MODEL ?? 'claude-haiku-4-5',
-      max_tokens: 2048,
-      system: `You are a Playwright test planning agent. Given accessibility snapshots of a
+    return complete(
+      `You are a Playwright test planning agent. Given accessibility snapshots of a
 web application, produce a structured Markdown test plan.
 
 Format each test case as:
@@ -128,18 +121,12 @@ Format each test case as:
 
 Cover happy paths, edge cases, and key user journeys. Be concise but precise —
 this plan feeds directly into a code generator that must produce runnable tests.`,
-      messages: [
-        {
-          role: 'user',
-          content: `App: ${planName}
+      `App: ${planName}
 Generate a Playwright test plan covering all pages below.
 
 ${snapshotBlock}`,
-        },
-      ],
-    })
-
-    return response.content[0].type === 'text' ? response.content[0].text : ''
+      { maxTokens: 2048 },
+    )
   }
 
   // ── Persistence ──────────────────────────────────────────────────────────
@@ -157,12 +144,6 @@ ${snapshotBlock}`,
 // ── Generator ─────────────────────────────────────────────────────────────────
 
 export class TestGeneratorAgent {
-  private readonly client: Anthropic
-
-  constructor(apiKey?: string) {
-    this.client = new Anthropic({ apiKey })
-  }
-
   /**
    * Read a plan from specs/<name>.md, emit Playwright test code, write to tests/generated/.
    */
@@ -181,10 +162,8 @@ export class TestGeneratorAgent {
   // ── LLM: code generation ─────────────────────────────────────────────────
 
   private async generateCode(planName: string, plan: string): Promise<string> {
-    const response = await this.client.messages.create({
-      model: process.env.WORKSHOP_MODEL ?? 'claude-haiku-4-5',
-      max_tokens: 4096,
-      system: `You are a Playwright test code generator. Convert a Markdown test plan into
+    const text = await complete(
+      `You are a Playwright test code generator. Convert a Markdown test plan into
 runnable TypeScript Playwright tests.
 
 Rules:
@@ -195,15 +174,10 @@ Rules:
 - Add await page.waitForLoadState('domcontentloaded') after navigation
 - Use baseURL 'http://localhost:5173' in the config or page.goto calls
 - Return ONLY the TypeScript code, no markdown fences, no explanation`,
-      messages: [
-        {
-          role: 'user',
-          content: `Convert this test plan for "${planName}" into Playwright TypeScript tests:\n\n${plan}`,
-        },
-      ],
-    })
+      `Convert this test plan for "${planName}" into Playwright TypeScript tests:\n\n${plan}`,
+      { maxTokens: 4096 },
+    )
 
-    const text = response.content[0].type === 'text' ? response.content[0].text : ''
     const fenced = text.match(/```(?:typescript|ts)?\n([\s\S]*?)```/)
     return fenced ? fenced[1].trim() : text.trim()
   }
@@ -241,8 +215,8 @@ Rules:
 // ── CLI entrypoint ────────────────────────────────────────────────────────────
 
 void (async () => {
-  const planner = new TestPlannerAgent(process.env.ANTHROPIC_API_KEY)
-  const generator = new TestGeneratorAgent(process.env.ANTHROPIC_API_KEY)
+  const planner = new TestPlannerAgent()
+  const generator = new TestGeneratorAgent()
 
   console.log('\n── Phase 1: Planner — exploring app ───────────────────────\n')
   const { planPath, markdown } = await planner.plan(
@@ -270,7 +244,7 @@ void (async () => {
  *
  * Task A — Run the full Planner → Generator pipeline against the live app:
  *   npm run dev &   # start the web-detective app
- *   ANTHROPIC_API_KEY=sk-... npx ts-node examples/ch4.1-playwright-agents/planner.ts
+ *   npx ts-node examples/ch4.1-playwright-agents/planner.ts
  *   Inspect specs/web-detective.md — does the plan match what you'd write by hand?
  *
  * Task B — Use Playwright's built-in agents (VS Code / Claude Code):

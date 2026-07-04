@@ -8,10 +8,10 @@
 ## What You Will Build
 
 By end of day, you will have a working end-to-end agentic workflow in which an AI agent:
-- Performs real-time browser UI testing via WebdriverIO and Playwright
+- Performs real-time browser UI testing via Playwright
 - Auto-generates test code from high-level prompts
 - Self-heals broken selectors at runtime
-- Integrates with OpenRouter and/or GitHub Copilot Agent Mode
+- Runs on a local LLM (Ollama + DeepSeek-R1) with no API key, and/or GitHub Copilot Agent Mode
 - Drives a browser through the official `@playwright/mcp` server
 - Runs autonomously inside a CI/CD pipeline
 - Is controlled by well-crafted, reusable testing skills
@@ -26,10 +26,10 @@ Make sure the following are installed before arriving:
 |------|---------|
 | VS Code + GitHub Copilot | IDE + Agent Mode |
 | Claude Code (or similar AI CLI) | Skills and agentic test authoring |
-| Node.js (LTS) | Runtime for WebdriverIO / Playwright |
+| Node.js (LTS) | Runtime for Playwright |
 | Git + GitHub account | Repo access and Copilot integration |
-| WebdriverIO CLI | Primary automation framework |
-| Playwright | Execution layer + MCP server |
+| Playwright | Primary automation framework + execution layer + MCP server |
+| Ollama + DeepSeek-R1 (`deepseek-r1:8b`) | Local LLM for agent reasoning — no API key (see `setup/local-llm-setup.md`) |
 | TypeScript and/or Python | Scripting language |
 | Docker Engine | Containerised CI/CD execution |
 
@@ -40,7 +40,7 @@ Make sure the following are installed before arriving:
 ### 09:00 – 09:30 · Welcome & Environment Check *(30 min)*
 
 - Workshop goals and structure overview
-- Validate toolchain: Node, WebdriverIO, Playwright, Docker, Claude Code
+- Validate toolchain: Node, Playwright, Ollama + DeepSeek-R1, Docker, Claude Code
 - Repository clone and project walkthrough
 - Quick demo of the target web application under test
 
@@ -71,16 +71,16 @@ Make sure the following are installed before arriving:
 
 ---
 
-### 11:00 – 12:30 · Chapter 2 — WebdriverIO & Playwright as the Execution Layer *(90 min)*
+### 11:00 – 12:30 · Chapter 2 — Playwright as the Execution Layer *(90 min)*
 
 **Concepts**
-- Treating WebdriverIO / Playwright as a controllable action toolkit — not a test runner
+- Treating Playwright as a controllable action toolkit — not a test runner
 - Extracting and interpreting page source (DOM, a11y tree, screenshots) for LLM reasoning
 - Mapping agentic actions to browser commands: a consistent action vocabulary
 - Building a fault-tolerant session for autonomous agents (retries, timeouts, state recovery)
 
 **Hands-on**
-- Instrument a WebdriverIO session to emit structured action logs
+- Instrument a Playwright session to emit structured action logs
 - Write an action wrapper that an LLM can call: `navigate`, `click`, `fill`, `assert`
 - Run a short autonomous flow against the demo app and inspect the logs
 
@@ -204,18 +204,18 @@ Make sure the following are installed before arriving:
 - Designing the full reasoning loop: observe → plan → act → verify → learn
 - Defining tools for UI interaction, invariant checking, and navigation
 - Prompt engineering for deterministic and repeatable browser behaviour
-- Integrating OpenRouter to swap underlying LLMs without rewriting agent logic
+- Swapping the underlying local model via Ollama (`WORKSHOP_MODEL`) without rewriting agent logic
 
 **Hands-on**
 - Build a minimal agent class with a tool registry and a planning prompt
-- Wire it to the WebdriverIO / Playwright execution layer from Chapter 2
+- Wire it to the Playwright execution layer from Chapter 2
 - Run a multi-step e-commerce scenario (login → search → checkout → confirm) driven entirely by the agent
 - Tune the system prompt to fix a hallucination or off-track navigation
 
 **Questions**
 1. The system prompt says "Always call `snapshot()` first to understand page state — never guess selectors." What failure mode does this guard against, and what would you observe in the tool call log if the agent ignored this rule?
 2. `done()` is a regular tool in the registry rather than a hard loop exit. What is the advantage of this design, and what would break if you replaced it with a simple `return` from inside `loop()`?
-3. The agent uses prompt caching by setting `cache_control: { type: "ephemeral" }` on the system prompt. In a 12-turn run that costs $0.10 without caching, what saving would you expect if the cached portion is 80% of the prompt tokens and Claude's cache read discount is 90%?
+3. DeepSeek-R1 has no native tool-calling, so the agent asks the model to reply with a single JSON action (`{ "tool", "input" }`) which the loop parses. What are two ways this prompt-based protocol can fail that a provider's native tool-calling would prevent — and how does the agent's parser (`extractJson` in `examples/shared/ollama.ts`, plus the "not a valid action" retry) defend against them?
 
 ---
 

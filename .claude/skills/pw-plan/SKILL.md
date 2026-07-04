@@ -19,11 +19,12 @@ Generate a Playwright test plan and test code. Target: `$ARGUMENTS`
    npx wait-on http://localhost:5173 --timeout 5000 || (npm run dev & npx wait-on http://localhost:5173 --timeout 30000)
    ```
 
-3. **Run the Planner** to explore the app and produce a Markdown plan:
+3. **Run the Planner** to explore the app and produce a Markdown plan
+   (requires a local Ollama server with `deepseek-r1:8b` — see `setup/local-llm-setup.md`):
    ```
    npx ts-node -e "
      const { TestPlannerAgent } = require('./examples/ch4.1-playwright-agents/planner')
-     void new TestPlannerAgent(process.env.ANTHROPIC_API_KEY)
+     void new TestPlannerAgent()
        .plan('http://localhost:5173', ['/login', '/dashboard', '/products'], '$PLAN_NAME')
        .then(r => console.log('Plan saved:', r.planPath))
    "

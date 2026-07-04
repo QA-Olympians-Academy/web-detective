@@ -2,16 +2,20 @@
  * CH5 — CUSTOM WEB TESTING AGENT
  *
  * Orchestrates the observe → plan → act → verify → learn loop using:
- *   • Claude (via Anthropic SDK) for planning and reasoning
+ *   • DeepSeek-R1 (via Ollama) for planning and reasoning — runs locally, no API key
  *   • Playwright for browser control
- *   • Prompt caching to keep multi-step runs fast and cost-efficient
  *
- * Run:  ANTHROPIC_API_KEY=sk-... npx ts-node examples/ch5-custom-agent/agent.ts
+ * DeepSeek-R1 has no native tool-calling, so the agent uses a JSON action protocol
+ * (see prompts.ts): each turn the model returns one `{ "tool", "input" }` object,
+ * which we parse, execute against the browser, and feed the result back.
+ *
+ * Run:  npx ts-node examples/ch5-custom-agent/agent.ts
+ *   (requires a local Ollama server with deepseek-r1:8b pulled — see setup/local-llm-setup.md)
  */
-import Anthropic from '@anthropic-ai/sdk'
 import { chromium, type Page } from 'playwright'
-import { AGENT_TOOLS, type ToolName } from './tools'
+import { AGENT_TOOLS, renderToolCatalog, type ToolName } from './tools'
 import { SYSTEM_PROMPT, tasks } from './prompts'
+import { chat, extractJson, MODEL, type ChatMessage } from '../shared/ollama'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -31,16 +35,19 @@ interface StepLog {
   ok: boolean
 }
 
+interface AgentAction {
+  tool: ToolName
+  input: Record<string, unknown>
+}
+
+const MAX_TURNS = 15
+const TOOL_NAMES = new Set<string>(AGENT_TOOLS.map(t => t.name))
+
 // ── Agent ─────────────────────────────────────────────────────────────────────
 
 export class WebTestAgent {
-  private readonly client: Anthropic
   private page: Page | null = null
   private steps: StepLog[] = []
-
-  constructor(apiKey?: string) {
-    this.client = new Anthropic({ apiKey })
-  }
 
   async run(goal: string): Promise<AgentRun> {
     const start = Date.now()
@@ -61,94 +68,54 @@ export class WebTestAgent {
   // ── Reasoning loop ────────────────────────────────────────────────────────
 
   private async loop(goal: string): Promise<Omit<AgentRun, 'durationMs' | 'steps'>> {
-    const messages: Anthropic.Messages.MessageParam[] = [
+    // System prompt = identity + constraints + the live tool catalog.
+    const system = `${SYSTEM_PROMPT}\n\n## Available tools\n${renderToolCatalog()}`
+
+    // The conversation the model sees. System is prepended on every turn.
+    const conversation: ChatMessage[] = [
       { role: 'user', content: goal },
     ]
 
-    for (let turn = 0; turn < 15; turn++) {
-      // Cache the growing conversation tail so each turn reads the prior turns
-      // (snapshots, tool results) from cache at ~0.1x instead of full price.
-      this.cacheConversation(messages)
-
-      const response = await this.client.messages.create({
-        // Tier is configurable: cheap by default for the workshop, override per run.
-        model: process.env.WORKSHOP_MODEL ?? 'claude-haiku-4-5',
-        max_tokens: 1024,
-        // Cache the system prompt + tools — identical on every turn in a run.
-        system: [
-          {
-            type: 'text',
-            text: SYSTEM_PROMPT,
-            cache_control: { type: 'ephemeral' },
-          },
-        ],
-        tools: AGENT_TOOLS,
-        messages,
-      })
-
-      // Visibility: read climbs each turn once caching is working; fresh stays small.
-      const u = response.usage
-      console.log(
-        `  tokens — fresh:${u.input_tokens} write:${u.cache_creation_input_tokens ?? 0} read:${u.cache_read_input_tokens ?? 0} out:${u.output_tokens}`,
+    for (let turn = 0; turn < MAX_TURNS; turn++) {
+      const { text, promptTokens, outputTokens } = await chat(
+        [{ role: 'system', content: system }, ...conversation],
+        { maxTokens: 1024 },
       )
 
-      // Append assistant response to conversation
-      messages.push({ role: 'assistant', content: response.content })
+      // Visibility: prompt tokens grow as the conversation (snapshots, results) grows.
+      console.log(`  tokens — prompt:${promptTokens} out:${outputTokens} (${MODEL})`)
 
-      if (response.stop_reason === 'end_turn') {
-        return { goal, passed: false, summary: 'Agent stopped without calling done()', toolCalls: turn }
-      }
+      conversation.push({ role: 'assistant', content: text })
 
-      // Execute all tool calls in this response
-      const toolResults: Anthropic.Messages.ToolResultBlockParam[] = []
+      const action = extractJson<AgentAction>(text)
 
-      for (const block of response.content) {
-        if (block.type !== 'tool_use') continue
-
-        const tool = block.name as ToolName
-        const input = block.input as Record<string, unknown>
-
-        if (tool === 'done') {
-          const summary = input.summary as string
-          const passed = input.passed as boolean
-          return { goal, passed, summary, toolCalls: turn + 1 }
-        }
-
-        const result = await this.execute(tool, input)
-        toolResults.push({
-          type: 'tool_result',
-          tool_use_id: block.id,
-          content: result,
+      if (!action || !action.tool || !TOOL_NAMES.has(action.tool)) {
+        // Model didn't emit a valid action — nudge it back to the protocol.
+        conversation.push({
+          role: 'user',
+          content:
+            'That was not a valid action. Reply with ONLY a single JSON object: ' +
+            '{ "tool": "<one of the listed tools>", "input": { ... } }',
         })
+        continue
       }
 
-      // Feed tool results back for next turn
-      if (toolResults.length > 0) {
-        messages.push({ role: 'user', content: toolResults })
+      const input = action.input ?? {}
+
+      if (action.tool === 'done') {
+        return {
+          goal,
+          passed: input.passed === true,
+          summary: String(input.summary ?? ''),
+          toolCalls: turn + 1,
+        }
       }
+
+      const result = await this.execute(action.tool, input)
+      conversation.push({ role: 'user', content: `Result of ${action.tool}:\n${result}` })
     }
 
-    return { goal, passed: false, summary: 'Reached max tool call limit (15)', toolCalls: 15 }
-  }
-
-  // ── Prompt caching ──────────────────────────────────────────────────────────
-
-  /**
-   * Mark the last content block of the most recent turn with cache_control so the
-   * next request reads the whole conversation prefix from cache. Clearing the prior
-   * marker first keeps us within the 4-breakpoint limit as the conversation grows.
-   */
-  private cacheConversation(messages: Anthropic.Messages.MessageParam[]): void {
-    for (const msg of messages) {
-      if (typeof msg.content === 'string') continue
-      for (const block of msg.content as Array<{ cache_control?: unknown }>) {
-        delete block.cache_control
-      }
-    }
-    const last = messages[messages.length - 1]
-    if (!last || typeof last.content === 'string' || last.content.length === 0) return
-    const tail = last.content[last.content.length - 1] as { cache_control?: { type: 'ephemeral' } }
-    tail.cache_control = { type: 'ephemeral' }
+    return { goal, passed: false, summary: `Reached max tool call limit (${MAX_TURNS})`, toolCalls: MAX_TURNS }
   }
 
   // ── Tool executor ─────────────────────────────────────────────────────────
@@ -228,7 +195,7 @@ export class WebTestAgent {
 // ── CLI entrypoint ────────────────────────────────────────────────────────────
 
 void (async () => {
-  const agent = new WebTestAgent(process.env.ANTHROPIC_API_KEY)
+  const agent = new WebTestAgent()
 
   console.log('\n── Running: Full e-commerce verification ──────────────────\n')
   const result = await agent.run(tasks.fullEcommerce())
@@ -249,7 +216,7 @@ void (async () => {
  * Task B — Tune the system prompt to fix a hallucinated selector:
  *   Add "When fill() fails, call snapshot() and re-plan" to SYSTEM_PROMPT.
  *
- * Task C — Swap the model to claude-opus-4-7 via OpenRouter:
- *   Change the Anthropic base_url to https://openrouter.ai/api/v1
- *   and set the model to "anthropic/claude-opus-4-7".
+ * Task C — Swap the model without touching agent code:
+ *   WORKSHOP_MODEL=qwen2.5-coder:7b npx ts-node examples/ch5-custom-agent/agent.ts
+ *   Compare how reliably each model sticks to the single-JSON-action protocol.
  */

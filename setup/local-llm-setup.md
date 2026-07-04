@@ -1,8 +1,19 @@
-# Local LLM setup — Ollama + Llama 3.1 + Continue (VS Code)
+# Local LLM setup — Ollama + DeepSeek-R1 + Continue (VS Code)
 
-A **free, no-API-key** coding assistant that runs entirely on your machine. Use this if you
-don't want to spend on the Anthropic API for the workshop — Ollama serves a local model and the
-**Continue** VS Code extension turns it into an inline chat/edit assistant.
+A **free, no-API-key** local model that powers the entire workshop. Use this if you
+don't want to spend on the Anthropic API — Ollama serves `deepseek-r1:8b` on your machine, and one
+model drives **two** things:
+
+1. the **Continue** VS Code extension — an inline chat/edit assistant for the coding exercises, and
+2. the workshop's **runnable agent examples** (Ch4, Ch4.1, Ch5, Ch7), which talk to the same Ollama
+   server through the shared `examples/shared/ollama.ts` module — no API key.
+
+Both point at the same Ollama endpoint on port **11434**, so setting up Ollama once covers everything.
+
+> **DeepSeek-R1 is a reasoning model.** Its raw output is wrapped in `<think>…</think>` blocks: in
+> Continue chat you'll see this as visible "thinking" before the answer, and the code examples strip
+> it automatically in `examples/shared/ollama.ts`. DeepSeek-R1 also lacks native Ollama tool-calling,
+> so the agent examples drive it with a prompt-based JSON action protocol instead of function calls.
 
 > Two ways to get there:
 > - **Option A — Local install** (below): each participant installs Ollama + pulls the model.
@@ -13,7 +24,7 @@ don't want to spend on the Anthropic API for the workshop — Ollama serves a lo
 
 ## Hardware check (read first)
 
-`llama3.1:8b` is ~4.7 GB to download and needs roughly:
+`deepseek-r1:8b` is ~5 GB to download and needs roughly:
 
 | RAM | Experience |
 |-----|-----------|
@@ -48,15 +59,16 @@ curl http://localhost:11434/api/tags     # → {"models":[...]}  (empty list is 
 ```
 If that connection is refused, start it manually with `ollama serve` in a spare terminal.
 
-### 2. Download Llama 3.1
+### 2. Download DeepSeek-R1
 ```bash
-ollama pull llama3.1:8b
+ollama pull deepseek-r1:8b
 ```
 Confirm it's a quick terminal chat before touching VS Code:
 ```bash
-ollama run llama3.1:8b "In one sentence, what is a Playwright locator?"
+ollama run deepseek-r1:8b "In one sentence, what is a Playwright locator?"
 ```
-You should get a coherent one-line answer. Type `/bye` to exit.
+You should get a coherent answer (possibly preceded by a `<think>…</think>` reasoning block — that's
+normal for DeepSeek-R1). Type `/bye` to exit.
 
 ### 3. Install the Continue extension
 1. In VS Code open **Extensions** (`Cmd/Ctrl+Shift+X`).
@@ -67,13 +79,13 @@ You should get a coherent one-line answer. Type `/bye` to exit.
 Create/edit **`~/.continue/config.yaml`** (Continue's current config format):
 
 ```yaml
-name: Local Llama 3.1
+name: Local DeepSeek-R1
 version: 0.0.1
 schema: v1
 models:
-  - name: Llama 3.1 8B
+  - name: DeepSeek-R1 8B
     provider: ollama
-    model: llama3.1:8b
+    model: deepseek-r1:8b
     # apiBase defaults to http://localhost:11434 — only set it for a remote/Docker Ollama:
     # apiBase: http://localhost:11434
     roles:
@@ -88,7 +100,7 @@ models:
 ```json
 {
   "models": [
-    { "title": "Llama 3.1 8B", "provider": "ollama", "model": "llama3.1:8b" }
+    { "title": "DeepSeek-R1 8B", "provider": "ollama", "model": "deepseek-r1:8b" }
   ]
 }
 ```
@@ -101,14 +113,14 @@ Save it — Continue hot-reloads. Full reference: <https://docs.continue.dev>.
 ## Verify it works — example chat
 
 1. Open the **Continue** sidebar (`Cmd/Ctrl+L`).
-2. Make sure **Llama 3.1 8B** is selected in the model dropdown at the bottom of the input box.
+2. Make sure **DeepSeek-R1 8B** is selected in the model dropdown at the bottom of the input box.
 3. Paste this prompt:
 
    > Write a Playwright test in TypeScript that logs into `http://localhost:5173/login`
    > with email `admin@shop.com` and password `password123`, then asserts the URL
    > contains `/dashboard`. Use ARIA locators (`getByLabel`, `getByRole`), no CSS selectors.
 
-**Expected result:** within a few seconds you get a fenced ```ts block using
+**Expected result:** after a short `<think>…</think>` reasoning pass, you get a fenced ```ts block using
 `page.goto(...)`, `page.getByLabel('Email address').fill(...)`, `page.getByRole('button', { name: 'Sign In' }).click()`,
 and `expect(page).toHaveURL(/\/dashboard/)`. That confirms the whole chain — Ollama serving, the
 model loaded, and Continue talking to it — is working.
@@ -116,9 +128,32 @@ model loaded, and Continue talking to it — is working.
 Bonus check of the **edit** role: open any `.spec.ts`, select a block, press `Cmd/Ctrl+I`, and ask
 "convert these CSS selectors to ARIA locators." Continue should propose an inline diff.
 
-> Local Llama 3.1 is capable but noticeably less accurate than Claude on the agentic chapters
-> (Ch5/Ch7). It's great for the coding/chat exercises; for the agent examples, expect more
-> hand-holding than the `ANTHROPIC_API_KEY` path.
+> Local DeepSeek-R1 is capable but a small local model: on the agentic chapters (Ch5/Ch7) it is
+> less reliable than a frontier cloud model at sticking to the strict JSON action protocol. It's
+> great for the coding/chat exercises; for the agent examples, expect more retries and the occasional
+> malformed action. If a chapter struggles, try a stronger local model via `WORKSHOP_MODEL`
+> (e.g. `qwen2.5-coder:7b`).
+
+---
+
+## Running the code examples against this model
+
+The workshop's agent chapters (Ch4, Ch4.1, Ch5, Ch7) use the same local model — no API key. Just make
+sure Ollama is up and the model is pulled, then run any example:
+
+```bash
+ollama serve                       # if not already running as a service
+ollama pull deepseek-r1:8b         # once
+npx ts-node examples/ch5-custom-agent/agent.ts
+```
+
+The examples reach Ollama on `http://localhost:11434` via `examples/shared/ollama.ts`, which also
+strips the `<think>…</think>` reasoning wrapper before parsing the model's JSON actions. To try a
+different model, set `WORKSHOP_MODEL` (defaults to `deepseek-r1:8b`):
+
+```bash
+WORKSHOP_MODEL=llama3.2:3b npx ts-node examples/ch5-custom-agent/agent.ts
+```
 
 ---
 
@@ -130,30 +165,30 @@ Files live in [`setup/ollama-docker/`](./ollama-docker/).
 ### Build the image (model baked in at build time)
 ```bash
 cd setup/ollama-docker
-docker build -t ollama-llama31:workshop .      # ~5 GB image; model pulled during build
+docker build -t ollama-deepseek-r1:workshop .      # ~5 GB image; model pulled during build
 ```
 
 ### Run it
 ```bash
-docker run -d --name ollama-workshop -p 11434:11434 ollama-llama31:workshop
+docker run -d --name ollama-workshop -p 11434:11434 ollama-deepseek-r1:workshop
 # or, from setup/ollama-docker:
 docker compose up -d
 ```
 The model is served on `http://localhost:11434` — the **same port Continue defaults to**, so the
 Option A `config.yaml` works unchanged. Test:
 ```bash
-curl http://localhost:11434/api/tags        # should list llama3.1:8b
+curl http://localhost:11434/api/tags        # should list deepseek-r1:8b
 ```
 
 ### Share it with students (zero download of the model on their side)
 Push once to a registry, students pull:
 ```bash
 # You (once):
-docker tag ollama-llama31:workshop ghcr.io/gpap84/ollama-llama31:workshop
-docker push ghcr.io/gpap84/ollama-llama31:workshop
+docker tag ollama-deepseek-r1:workshop ghcr.io/gpap84/ollama-deepseek-r1:workshop
+docker push ghcr.io/gpap84/ollama-deepseek-r1:workshop
 
 # Each participant:
-docker run -d -p 11434:11434 ghcr.io/gpap84/ollama-llama31:workshop
+docker run -d -p 11434:11434 ghcr.io/gpap84/ollama-deepseek-r1:workshop
 ```
 Then they install Continue (Option A step 3–4) and point it at `localhost:11434`. No Ollama
 install, no model download.
@@ -219,7 +254,7 @@ service name), so set `apiBase: http://ollama:11434` in `continue-config.yaml`. 
 | Symptom | Fix |
 |---|---|
 | `curl localhost:11434` connection refused | Start the server: `ollama serve` (native) or `docker start ollama-workshop`. |
-| Continue shows no models / "No model selected" | Check `~/.continue/config.yaml` exists and the model name matches `ollama list` output exactly (`llama3.1:8b`). |
+| Continue shows no models / "No model selected" | Check `~/.continue/config.yaml` exists and the model name matches `ollama list` output exactly (`deepseek-r1:8b`). |
 | Continue chats but replies are empty/errors | Model name mismatch, or Ollama pointing at a different port — confirm `apiBase`. |
 | Very slow responses | You're on CPU. Use a GPU, or switch to `llama3.2:3b`. |
 | Out of memory / crash | Model too big for RAM — use `llama3.2:3b` or `qwen2.5-coder:3b`. |

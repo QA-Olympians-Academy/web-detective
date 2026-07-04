@@ -16,11 +16,12 @@
  * Exit codes:
  *   0  — all critical scenarios passed
  *   1  — one or more critical scenarios failed
- *   2  — configuration error (bad arg, missing API key)
+ *   2  — configuration error (bad arg, Ollama/model not available)
  */
 import { WebTestAgent } from '../ch5-custom-agent/agent'
 import { SCENARIOS, findScenario, type Scenario } from './scenarios'
 import { CIReporter } from './reporter'
+import { checkOllama } from '../shared/ollama'
 
 // ── CLI argument parsing ───────────────────────────────────────────────────────
 
@@ -69,12 +70,6 @@ async function runScenario(
 // ── Main ───────────────────────────────────────────────────────────────────────
 
 void (async () => {
-  const apiKey = process.env.ANTHROPIC_API_KEY
-  if (!apiKey) {
-    console.error('Error: ANTHROPIC_API_KEY environment variable is required')
-    process.exit(2)
-  }
-
   const args = parseArgs()
 
   if (args.mode === 'list') {
@@ -85,8 +80,15 @@ void (async () => {
     process.exit(0)
   }
 
+  // Config check: the agent needs a local Ollama server with the model pulled.
+  const ollamaStatus = await checkOllama()
+  if (!ollamaStatus.ok) {
+    console.error(`Error: ${ollamaStatus.error}`)
+    process.exit(2)
+  }
+
   const reporter = new CIReporter()
-  const agent    = new WebTestAgent(apiKey)
+  const agent    = new WebTestAgent()
 
   const toRun: Scenario[] = args.mode === 'all'
     ? SCENARIOS
@@ -110,12 +112,12 @@ void (async () => {
 /**
  * WORKSHOP TASKS (Chapter 7 hands-on):
  *
- * Task A — Run a single scenario locally:
- *   ANTHROPIC_API_KEY=sk-... npx ts-node examples/ch7-agent-ci/agent-runner.ts --scenario login-flow
+ * Task A — Run a single scenario locally (requires a local Ollama server):
+ *   npx ts-node examples/ch7-agent-ci/agent-runner.ts --scenario login-flow
  *
  * Task B — List all scenarios, then run all:
  *   npx ts-node examples/ch7-agent-ci/agent-runner.ts --list
- *   ANTHROPIC_API_KEY=sk-... npx ts-node examples/ch7-agent-ci/agent-runner.ts --all
+ *   npx ts-node examples/ch7-agent-ci/agent-runner.ts --all
  *
  * Task C — Add a new scenario to scenarios.ts and watch it appear in --list
  *   without changing this file or the workflow YAML.

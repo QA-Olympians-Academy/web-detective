@@ -12,9 +12,9 @@
  *   4. Try each candidate in ranked order
  *   5. Persist the first working candidate to LocatorStore
  */
-import Anthropic from '@anthropic-ai/sdk'
 import { type Page } from 'playwright'
 import { LocatorStore } from './locator-store'
+import { complete, extractJson } from '../shared/ollama'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -29,11 +29,9 @@ export interface HealResult {
 // ── Healer ────────────────────────────────────────────────────────────────────
 
 export class SelfHealingAgent {
-  private readonly client: Anthropic
   private readonly store: LocatorStore
 
-  constructor(store: LocatorStore, apiKey?: string) {
-    this.client = new Anthropic({ apiKey })
+  constructor(store: LocatorStore) {
     this.store = store
   }
 
@@ -89,10 +87,7 @@ export class SelfHealingAgent {
     brokenSelector: string,
     accessibilityTree: string,
   ): Promise<string[]> {
-    const response = await this.client.messages.create({
-      model: process.env.WORKSHOP_MODEL ?? 'claude-haiku-4-5',
-      max_tokens: 512,
-      system: `You are a Playwright selector expert. Given a broken CSS/ARIA selector and the
+    const system = `You are a Playwright selector expert. Given a broken CSS/ARIA selector and the
 current accessibility tree of a web page, return 3-5 alternative Playwright selectors
 that would locate the same element.
 
@@ -100,28 +95,21 @@ Rules:
 - Prefer ARIA selectors: getByRole, getByLabel, getByText, getByPlaceholder
 - Fall back to semantic CSS classes (not structural nth-child paths)
 - Return ONLY a JSON array of selector strings, no explanation
-- Order from most stable (ARIA) to least stable (CSS)`,
-      messages: [
-        {
-          role: 'user',
-          content: `Element key: "${key}"
+- Order from most stable (ARIA) to least stable (CSS)`
+
+    const text = await complete(
+      system,
+      `Element key: "${key}"
 Broken selector: "${brokenSelector}"
 
 Current accessibility tree:
 ${accessibilityTree}
 
 Return a JSON array of 3-5 alternative Playwright selectors for this element.`,
-        },
-      ],
-    })
+      { maxTokens: 512 },
+    )
 
-    const text = response.content[0].type === 'text' ? response.content[0].text : '[]'
-    try {
-      const match = text.match(/\[[\s\S]*\]/)
-      return match ? (JSON.parse(match[0]) as string[]) : []
-    } catch {
-      return []
-    }
+    return extractJson<string[]>(text) ?? []
   }
 }
 
@@ -142,12 +130,13 @@ Return a JSON array of 3-5 alternative Playwright selectors for this element.`,
  *
  * 3. Run a test that uses the healer:
  *
- *    const healer = new SelfHealingAgent(store, process.env.ANTHROPIC_API_KEY)
+ *    const healer = new SelfHealingAgent(store)
  *    const selector = await healer.findElement(page, 'login.emailInput')
  *    await page.locator(selector).fill('admin@shop.com')
  *
- * 4. The healer detects the failure, snapshots the DOM, asks Claude for
- *    alternatives, validates them, and writes the winner to locator-memory.json.
+ * 4. The healer detects the failure, snapshots the DOM, asks the local model
+ *    (DeepSeek-R1 via Ollama) for alternatives, validates them, and writes the
+ *    winner to locator-memory.json.
  *
  * 5. Run store.printReport() to see the healing history.
  */

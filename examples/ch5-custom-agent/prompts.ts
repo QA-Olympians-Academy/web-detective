@@ -27,11 +27,25 @@ interacting with elements, and asserting expected outcomes.
 
 ## Action constraints
 - Use the 'done' tool as soon as the goal is achieved or definitively failed.
-- Do not loop more than 15 tool calls — if the goal is not met by then, call done(passed: false).
+- Do not loop more than 15 tool calls — if the goal is not met by then, call done with passed=false.
 - Do not invent selectors — use only what appears in the snapshot output.
 - Assertions must produce binary outcomes: passed or failed, with evidence.
 
-## Output format
+## Action protocol (IMPORTANT)
+You interact with the browser by calling exactly ONE tool per turn. Reply with a
+single JSON object and NOTHING else — no prose, no markdown fences around it:
+
+  { "tool": "<tool name>", "input": { <parameters> } }
+
+Examples:
+  { "tool": "snapshot", "input": {} }
+  { "tool": "fill", "input": { "selector": "getByLabel('Email address')", "value": "admin@shop.com" } }
+  { "tool": "done", "input": { "summary": "...", "passed": true } }
+
+After each action you receive the result as the next user message, then you decide
+the next single action. The available tools and their parameters are listed below.
+
+## 'done' summary format
 When calling 'done', the summary must include:
   1. Each assertion that was checked
   2. The actual value observed
@@ -134,11 +148,11 @@ All 9 steps must pass for the overall goal to be considered achieved.
  *   must be valid JSON: { "assertions": [...], "passed": true/false }
  *   Update agent.ts to JSON.parse the summary and surface individual assertion results.
  *
- * Task D — Measure prompt cache hit rate across a multi-task run:
+ * Task D — Measure local model latency across a multi-task run:
  *   Run three tasks back-to-back in the same process:
  *     for (const task of [tasks.authRedirect(), tasks.loginFlow(), tasks.productSearch('TV', 2)]) {
  *       await agent.run(task)
  *     }
- *   Add console.log of response.usage.cache_read_input_tokens after each turn.
- *   Confirm the system prompt is cached after turn 1.
+ *   The first turn is slow while Ollama loads deepseek-r1 into memory; later turns
+ *   are faster once the model is warm. Log durationMs per run and confirm the warm-up cost.
  */

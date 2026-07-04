@@ -1,9 +1,17 @@
+// @ts-nocheck
 /**
- * CH1 — AGENTIC TASK GRAPH
+ * CH1 — AGENTIC TASK GRAPH  (WORKSHOP EXERCISE STUB)
  *
- * A typed representation of a test scenario as a goal-driven task graph.
+ * This is the Chapter 1 exercise file. The types and signatures below define
+ * the API you will work against — implement the bodies live during the workshop.
+ *
+ * Goal: a typed representation of a test scenario as a goal-driven task graph.
  * An agent uses this structure to plan, execute, verify, and retry — rather
  * than following a linear script that fails silently on any deviation.
+ *
+ * The full reference implementation is available via:
+ *   git checkout solutions
+ * and is documented in SOLUTIONS.md.
  */
 
 // ── Core types ────────────────────────────────────────────────────────────────
@@ -43,86 +51,7 @@ export interface TaskGraph {
 
 // ── Example: login scenario mapped as a task graph ────────────────────────────
 
-export const loginTaskGraph: TaskGraph = {
-  name: 'Login flow — web-detective',
-  baseUrl: 'http://localhost:5173',
-
-  tasks: [
-    {
-      id: 'navigate-to-login',
-      goal: 'Open the login page',
-      preconditions: ['app is running on localhost:5173'],
-      actions: [
-        {
-          type: 'navigate',
-          target: '/login',
-          description: 'Navigate to the login route',
-        },
-        {
-          type: 'assert_url',
-          value: '/login',
-          description: 'Confirm the URL is /login (not redirected away)',
-        },
-      ],
-      successCriteria: 'URL is /login and login form is visible',
-      onFailure: 'retry',
-      maxRetries: 2,
-    },
-
-    {
-      id: 'submit-credentials',
-      goal: 'Fill and submit valid credentials',
-      preconditions: ['login form is visible'],
-      actions: [
-        {
-          type: 'fill',
-          target: 'label:Email address >> input',   // semantic selector
-          value: 'admin@shop.com',
-          description: 'Enter admin email',
-        },
-        {
-          type: 'fill',
-          target: 'label:Password >> input',
-          value: 'password123',
-          description: 'Enter password',
-        },
-        {
-          type: 'click',
-          target: 'button[name="Sign In"]',
-          description: 'Submit the login form',
-        },
-      ],
-      successCriteria: 'No error message visible after submit',
-      onFailure: 'abort',
-      maxRetries: 1,
-    },
-
-    {
-      id: 'verify-dashboard',
-      goal: 'Confirm successful redirect to dashboard',
-      preconditions: ['credentials were submitted'],
-      actions: [
-        {
-          type: 'assert_url',
-          value: '/dashboard',
-          description: 'URL should be /dashboard after login',
-        },
-        {
-          type: 'assert_visible',
-          target: 'h2:text("Dashboard")',
-          description: 'Dashboard heading is visible',
-        },
-        {
-          type: 'screenshot',
-          description: 'Capture dashboard state as audit evidence',
-        },
-      ],
-      successCriteria: 'URL is /dashboard and heading "Dashboard" is visible',
-      onFailure: 'retry',
-      maxRetries: 2,
-    },
-  ],
-}
+export const loginTaskGraph: TaskGraph = { name: '', baseUrl: '', tasks: [] } // TODO: build the login task graph (navigate → submit credentials → verify dashboard)
 
 // ── Runner skeleton ───────────────────────────────────────────────────────────
 
@@ -140,15 +69,5 @@ export const loginTaskGraph: TaskGraph = {
  * Next step: wire this graph into the ActionWrapper in ch2-execution-layer/action-wrapper.ts
  */
 export function describeGraph(graph: TaskGraph): void {
-  console.log(`\nTask Graph: ${graph.name}`)
-  console.log(`Base URL  : ${graph.baseUrl}`)
-  console.log(`Tasks     : ${graph.tasks.length}\n`)
-
-  for (const task of graph.tasks) {
-    console.log(`  [${task.id}]`)
-    console.log(`    Goal    : ${task.goal}`)
-    console.log(`    Actions : ${task.actions.length}`)
-    console.log(`    Success : ${task.successCriteria}`)
-    console.log(`    Failure : ${task.onFailure} (max ${task.maxRetries} retries)\n`)
-  }
+  throw new Error('TODO: implement in Chapter 1')
 }

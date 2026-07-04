@@ -1,5 +1,9 @@
+// @ts-nocheck
 /**
- * CH4 — SELF-HEALING AGENT
+ * CH4 EXERCISE FILE — SELF-HEALING AGENT
+ *
+ * This is a starter stub. Implement the method bodies live during the workshop.
+ * Full reference implementation: `git checkout solutions` and see SOLUTIONS.md.
  *
  * Detects when a locator fails at runtime, asks an LLM to rank alternative
  * selectors from the live DOM, validates the best candidate, and persists
@@ -40,76 +44,26 @@ export class SelfHealingAgent {
    * On failure, trigger the healing loop.
    */
   async findElement(page: Page, key: string): Promise<string> {
-    const entry = this.store.get(key)
-    const selector = entry?.selector
-
-    if (!selector) throw new Error(`No selector registered for key "${key}"`)
-
-    const visible = await page.locator(selector).isVisible().catch(() => false)
-    if (visible) {
-      this.store.markVerified(key)
-      return selector
-    }
-
-    console.warn(`[SelfHealer] Selector failed for "${key}": ${selector}`)
-    const result = await this.heal(page, key, selector)
-
-    if (!result.healed || !result.newSelector) {
-      throw new Error(`Failed to heal selector for "${key}". Tried: ${result.candidates.join(', ')}`)
-    }
-
-    return result.newSelector
+    throw new Error('TODO: implement in Chapter 4')
   }
 
   /**
    * Healing loop: snapshot DOM → ask LLM → validate candidates → persist winner.
    */
   async heal(page: Page, key: string, brokenSelector: string): Promise<HealResult> {
-    const domText = (await page.locator('body').ariaSnapshot()).slice(0, 4000) // cap for token budget
-
-    const candidates = await this.askLLMForCandidates(key, brokenSelector, domText)
-
-    for (const candidate of candidates) {
-      const found = await page.locator(candidate).isVisible().catch(() => false)
-      if (found) {
-        this.store.heal(key, candidate)
-        return { healed: true, originalSelector: brokenSelector, newSelector: candidate, candidates }
-      }
-    }
-
-    return { healed: false, originalSelector: brokenSelector, candidates }
+    throw new Error('TODO: implement in Chapter 4')
   }
 
   // ── LLM integration ──────────────────────────────────────────────────────
-
+  //
+  // Prompt the local model with the broken selector + accessibility tree via
+  // complete(system, user), then extractJson<string[]>() the ranked candidates.
   private async askLLMForCandidates(
     key: string,
     brokenSelector: string,
     accessibilityTree: string,
   ): Promise<string[]> {
-    const system = `You are a Playwright selector expert. Given a broken CSS/ARIA selector and the
-current accessibility tree of a web page, return 3-5 alternative Playwright selectors
-that would locate the same element.
-
-Rules:
-- Prefer ARIA selectors: getByRole, getByLabel, getByText, getByPlaceholder
-- Fall back to semantic CSS classes (not structural nth-child paths)
-- Return ONLY a JSON array of selector strings, no explanation
-- Order from most stable (ARIA) to least stable (CSS)`
-
-    const text = await complete(
-      system,
-      `Element key: "${key}"
-Broken selector: "${brokenSelector}"
-
-Current accessibility tree:
-${accessibilityTree}
-
-Return a JSON array of 3-5 alternative Playwright selectors for this element.`,
-      { maxTokens: 1024 },
-    )
-
-    return extractJson<string[]>(text) ?? []
+    throw new Error('TODO: implement in Chapter 4')
   }
 }
 

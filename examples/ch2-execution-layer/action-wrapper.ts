@@ -1,14 +1,16 @@
+// @ts-nocheck
 /**
- * CH2 — ACTION WRAPPER
+ * CH2 — ACTION WRAPPER  (WORKSHOP EXERCISE STUB)
  *
- * Wraps Playwright's Page into a typed, loggable action vocabulary that an LLM
- * can call without knowing anything about Playwright internals.
+ * This is the Chapter 2 exercise file. The method bodies are intentionally
+ * left unimplemented — you will fill them in live during the workshop.
  *
- * Key design goals:
- *   • Every action returns a structured ActionResult — no thrown exceptions
- *     that crash the agent loop.
- *   • Every action is logged with enough context to replay or debug it.
- *   • The vocabulary is intentionally small — LLMs do better with fewer tools.
+ * Goal: wrap Playwright's Page into a typed, loggable action vocabulary that
+ * an LLM can call without knowing anything about Playwright internals.
+ *
+ * For the full reference implementation:
+ *   git checkout solutions
+ * and read SOLUTIONS.md.
  */
 import { type Page, type Locator } from '@playwright/test'
 
@@ -39,9 +41,8 @@ export interface ActionLogger {
 
 const consoleLogger: ActionLogger = {
   log(result) {
-    const status = result.ok ? '✓' : '✗'
-    console.log(`${status} [${result.action}] ${result.target ?? ''} ${result.value ?? ''} (${result.durationMs}ms)`)
-    if (!result.ok) console.error(`  ↳ ${result.error}`)
+    // TODO: implement in Chapter 2
+    throw new Error('TODO: implement in Chapter 2')
   },
 }
 
@@ -58,109 +59,61 @@ export class ActionWrapper {
   // ── Navigation ──────────────────────────────────────────────────────────────
 
   async navigate(url: string): Promise<ActionResult> {
-    return this.run('navigate', url, async () => {
-      await this.page.goto(url, { waitUntil: 'domcontentloaded' })
-    })
+    throw new Error('TODO: implement in Chapter 2')
   }
 
   // ── Interaction ─────────────────────────────────────────────────────────────
 
   async click(selector: string): Promise<ActionResult> {
-    return this.run('click', selector, async () => {
-      await this.resolve(selector).click()
-    })
+    throw new Error('TODO: implement in Chapter 2')
   }
 
   async fill(selector: string, value: string): Promise<ActionResult> {
-    return this.run('fill', selector, async () => {
-      await this.resolve(selector).fill(value)
-    }, value)
+    throw new Error('TODO: implement in Chapter 2')
   }
 
   async select(selector: string, value: string): Promise<ActionResult> {
-    return this.run('select', selector, async () => {
-      await this.resolve(selector).selectOption(value)
-    }, value)
+    throw new Error('TODO: implement in Chapter 2')
   }
 
   // ── Assertions ──────────────────────────────────────────────────────────────
 
   async assertVisible(selector: string): Promise<ActionResult> {
-    return this.run('assert_visible', selector, async () => {
-      await this.resolve(selector).waitFor({ state: 'visible', timeout: 5000 })
-    })
+    throw new Error('TODO: implement in Chapter 2')
   }
 
   async assertText(selector: string, expected: string): Promise<ActionResult> {
-    return this.run('assert_text', selector, async () => {
-      const text = await this.resolve(selector).innerText()
-      if (!text.includes(expected)) {
-        throw new Error(`Expected "${expected}" but got "${text}"`)
-      }
-    }, expected)
+    throw new Error('TODO: implement in Chapter 2')
   }
 
   async assertUrl(pattern: string): Promise<ActionResult> {
-    return this.run('assert_url', pattern, async () => {
-      const url = this.page.url()
-      if (!url.includes(pattern)) {
-        throw new Error(`Expected URL to include "${pattern}" but got "${url}"`)
-      }
-    })
+    throw new Error('TODO: implement in Chapter 2')
   }
 
   // ── Observation ─────────────────────────────────────────────────────────────
 
   async snapshot(): Promise<PageSnapshot> {
-    const [title, accessibilityTree] = await Promise.all([
-      this.page.title(),
-      this.page.locator('body').ariaSnapshot(),
-    ])
-    return {
-      url: this.page.url(),
-      title,
-      accessibilityTree,
-    }
+    throw new Error('TODO: implement in Chapter 2')
   }
 
   async screenshot(): Promise<Buffer> {
-    return this.page.screenshot({ type: 'png' })
+    throw new Error('TODO: implement in Chapter 2')
   }
 
   // ── Audit log ────────────────────────────────────────────────────────────────
 
   getLog(): ActionResult[] {
-    return [...this.log]
+    throw new Error('TODO: implement in Chapter 2')
   }
 
   printSummary(): void {
-    const passed = this.log.filter(r => r.ok).length
-    const failed = this.log.filter(r => !r.ok).length
-    const total = this.log.reduce((s, r) => s + r.durationMs, 0)
-    console.log(`\nSummary: ${passed} passed, ${failed} failed — ${total}ms total`)
+    throw new Error('TODO: implement in Chapter 2')
   }
 
   // ── Internals ────────────────────────────────────────────────────────────────
 
   private resolve(selector: string): Locator {
-    // Prefer ARIA selectors when the selector looks semantic
-    if (selector.startsWith('role:')) {
-      const [, roleAndName] = selector.split(':')
-      const [role, name] = roleAndName.split('[name=')
-      return this.page.getByRole(role as Parameters<Page['getByRole']>[0], {
-        name: name?.replace(/"]$/, ''),
-      })
-    }
-    if (selector.startsWith('label:')) {
-      return this.page.getByLabel(selector.slice(6))
-    }
-    if (selector.startsWith('text:')) {
-      return this.page.getByText(selector.slice(5))
-    }
-    if (selector.startsWith('placeholder:')) {
-      return this.page.getByPlaceholder(selector.slice(12))
-    }
-    return this.page.locator(selector)
+    throw new Error('TODO: implement in Chapter 2')
   }
 
   private async run(
@@ -169,30 +122,7 @@ export class ActionWrapper {
     fn: () => Promise<void>,
     value?: string,
   ): Promise<ActionResult> {
-    const start = Date.now()
-    let ok = true
-    let error: string | undefined
-
-    try {
-      await fn()
-    } catch (err) {
-      ok = false
-      error = err instanceof Error ? err.message : String(err)
-    }
-
-    const result: ActionResult = {
-      ok,
-      action,
-      target,
-      value,
-      error,
-      durationMs: Date.now() - start,
-      timestamp: new Date().toISOString(),
-    }
-
-    this.log.push(result)
-    this.logger.log(result)
-    return result
+    throw new Error('TODO: implement in Chapter 2')
   }
 }
 

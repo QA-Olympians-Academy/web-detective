@@ -1,5 +1,11 @@
+// @ts-nocheck
 /**
- * CH5 — SYSTEM & TASK PROMPTS
+ * CH5 — SYSTEM & TASK PROMPTS (WORKSHOP STUB)
+ *
+ * This is the Chapter 5 exercise file. Author the prompts live during the
+ * workshop. The full reference implementation is available via:
+ *   git checkout solutions
+ * and is documented in SOLUTIONS.md.
  *
  * Two types of prompts power the agent:
  *
@@ -13,44 +19,9 @@
 
 // ── System prompt ─────────────────────────────────────────────────────────────
 
-export const SYSTEM_PROMPT = `You are a web testing agent operating a real browser via Playwright.
-
-Your job is to verify that a web application behaves correctly by navigating it,
-interacting with elements, and asserting expected outcomes.
-
-## Reasoning style
-- Always call snapshot() first to understand the current page state.
-- Plan your next action based on what the snapshot reveals — do NOT guess selectors.
-- Prefer ARIA-based selectors: getByRole, getByLabel, getByText, getByPlaceholder.
-- If an assertion fails, take a screenshot and report clearly what you observed vs. what was expected.
-- Never navigate away from a page mid-assertion unless the goal requires it.
-
-## Action constraints
-- Use the 'done' tool as soon as the goal is achieved or definitively failed.
-- Do not loop more than 15 tool calls — if the goal is not met by then, call done with passed=false.
-- Do not invent selectors — use only what appears in the snapshot output.
-- Assertions must produce binary outcomes: passed or failed, with evidence.
-
-## Action protocol (IMPORTANT)
-You interact with the browser by calling exactly ONE tool per turn. Reply with a
-single JSON object and NOTHING else — no prose, no markdown fences around it:
-
-  { "tool": "<tool name>", "input": { <parameters> } }
-
-Examples:
-  { "tool": "snapshot", "input": {} }
-  { "tool": "fill", "input": { "selector": "getByLabel('Email address')", "value": "admin@shop.com" } }
-  { "tool": "done", "input": { "summary": "...", "passed": true } }
-
-After each action you receive the result as the next user message, then you decide
-the next single action. The available tools and their parameters are listed below.
-
-## 'done' summary format
-When calling 'done', the summary must include:
-  1. Each assertion that was checked
-  2. The actual value observed
-  3. Whether it matched the expectation
-`
+// TODO: write the system prompt — define the agent's identity, reasoning style,
+//       action constraints, and output format. Implement in Chapter 5.
+export const SYSTEM_PROMPT = 'TODO: write the system prompt'
 
 // ── Task prompt builders ──────────────────────────────────────────────────────
 
@@ -67,61 +38,17 @@ const ctx: TaskContext = {
 export const tasks = {
 
   /** Verify unauthenticated redirect */
-  authRedirect: () => `
-Goal: Verify that navigating to ${ctx.baseUrl}/dashboard without being logged in
-redirects to ${ctx.baseUrl}/login.
-
-Start at: ${ctx.baseUrl}/dashboard
-Assert: URL contains "/login"
-Assert: Login form is visible
-`,
+  authRedirect: (): string => 'TODO: write the authRedirect task prompt',
 
   /** Full login flow */
-  loginFlow: () => `
-Goal: Log in to ${ctx.baseUrl} and confirm the dashboard is accessible.
-
-Credentials: ${ctx.credentials!.email} / ${ctx.credentials!.password}
-
-Steps to verify:
-1. Navigate to ${ctx.baseUrl}/login
-2. Fill email and password fields
-3. Click Sign In
-4. Assert URL contains "/dashboard"
-5. Assert a heading with text "Dashboard" is visible
-6. Assert the navbar shows the user email "${ctx.credentials!.email}"
-`,
+  loginFlow: (): string => 'TODO: write the loginFlow task prompt',
 
   /** Products search */
-  productSearch: (query: string, expectedCount: number) => `
-Goal: Verify the product search on the products page filters correctly.
-
-Pre-condition: Logged in as ${ctx.credentials!.email}
-Start at: ${ctx.baseUrl}/products
-
-Steps to verify:
-1. Confirm there are 15 products in the initial list
-2. Type "${query}" into the search input
-3. Assert the table shows exactly ${expectedCount} rows
-4. Assert the footer text says "Showing ${expectedCount} of 15 products"
-`,
+  productSearch: (query: string, expectedCount: number): string =>
+    'TODO: write the productSearch task prompt',
 
   /** E2E: login → navigate → search ──────────────────────────────────────── */
-  fullEcommerce: () => `
-Goal: Complete an end-to-end verification of the web-detective ecommerce app.
-
-Steps:
-1. Navigate to ${ctx.baseUrl} (should redirect to /login)
-2. Log in with ${ctx.credentials!.email} / ${ctx.credentials!.password}
-3. Verify dashboard loads with stat cards (Total Revenue, Total Orders, Customers, Avg Order Value)
-4. Navigate to the Products page via the navbar
-5. Verify 15 products are listed
-6. Search for "Electronics" — verify at least 5 results appear
-7. Clear the search — verify all 15 products return
-8. Log out via the Logout button
-9. Verify redirect to /login
-
-All 9 steps must pass for the overall goal to be considered achieved.
-`,
+  fullEcommerce: (): string => 'TODO: write the fullEcommerce task prompt',
 }
 
 /**
@@ -148,11 +75,11 @@ All 9 steps must pass for the overall goal to be considered achieved.
  *   must be valid JSON: { "assertions": [...], "passed": true/false }
  *   Update agent.ts to JSON.parse the summary and surface individual assertion results.
  *
- * Task D — Measure local model latency across a multi-task run:
+ * Task D — Measure prompt cache hit rate across a multi-task run:
  *   Run three tasks back-to-back in the same process:
  *     for (const task of [tasks.authRedirect(), tasks.loginFlow(), tasks.productSearch('TV', 2)]) {
  *       await agent.run(task)
  *     }
- *   The first turn is slow while Ollama loads deepseek-r1 into memory; later turns
- *   are faster once the model is warm. Log durationMs per run and confirm the warm-up cost.
+ *   Add console.log of response.usage.cache_read_input_tokens after each turn.
+ *   Confirm the system prompt is cached after turn 1.
  */

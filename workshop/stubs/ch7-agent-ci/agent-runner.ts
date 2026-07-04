@@ -23,11 +23,12 @@
  * Exit codes:
  *   0  — all critical scenarios passed
  *   1  — one or more critical scenarios failed
- *   2  — configuration error (bad arg, missing API key)
+ *   2  — configuration error (bad arg, Ollama/model not available)
  */
 import { WebTestAgent } from '../ch5-custom-agent/agent'
 import { SCENARIOS, findScenario, type Scenario } from './scenarios'
 import { CIReporter } from './reporter'
+import { checkOllama } from '../shared/ollama'
 
 // ── CLI argument parsing ───────────────────────────────────────────────────────
 
@@ -54,12 +55,12 @@ void (async () => {
 /**
  * WORKSHOP TASKS (Chapter 7 hands-on):
  *
- * Task A — Run a single scenario locally:
- *   ANTHROPIC_API_KEY=sk-... npx ts-node examples/ch7-agent-ci/agent-runner.ts --scenario login-flow
+ * Task A — Run a single scenario locally (requires a local Ollama server):
+ *   npx ts-node examples/ch7-agent-ci/agent-runner.ts --scenario login-flow
  *
  * Task B — List all scenarios, then run all:
  *   npx ts-node examples/ch7-agent-ci/agent-runner.ts --list
- *   ANTHROPIC_API_KEY=sk-... npx ts-node examples/ch7-agent-ci/agent-runner.ts --all
+ *   npx ts-node examples/ch7-agent-ci/agent-runner.ts --all
  *
  * Task C — Add a new scenario to scenarios.ts and watch it appear in --list
  *   without changing this file or the workflow YAML.

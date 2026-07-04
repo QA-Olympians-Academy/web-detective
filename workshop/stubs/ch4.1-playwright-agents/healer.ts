@@ -13,13 +13,16 @@
  * healer replays each failing test, inspects the current UI, rewrites the
  * broken test block, and re-runs the suite — repeating until green or giving up.
  *
- * Run: ANTHROPIC_API_KEY=sk-... npx ts-node examples/ch4.1-playwright-agents/healer.ts
+ * The LLM calls run against a local Ollama server (DeepSeek-R1) — no API key.
+ *
+ * Run: npx ts-node examples/ch4.1-playwright-agents/healer.ts
+ *   (requires a local Ollama server with deepseek-r1:8b — see setup/local-llm-setup.md)
  */
-import Anthropic from '@anthropic-ai/sdk'
 import { chromium } from 'playwright'
 import { spawnSync } from 'child_process'
 import * as fs from 'fs'
 import * as path from 'path'
+import { complete } from '../shared/ollama'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -56,12 +59,6 @@ interface PWReport {
 const MAX_ROUNDS = 3
 
 export class TestHealerAgent {
-  private readonly client: Anthropic
-
-  constructor(apiKey?: string) {
-    this.client = new Anthropic({ apiKey })
-  }
-
   /**
    * Run the test file, repair failures, repeat until green or MAX_ROUNDS exceeded.
    */
@@ -105,7 +102,7 @@ export class TestHealerAgent {
 // ── CLI entrypoint ────────────────────────────────────────────────────────────
 
 void (async () => {
-  const healer = new TestHealerAgent(process.env.ANTHROPIC_API_KEY)
+  const healer = new TestHealerAgent()
 
   const testFile = path.resolve('./tests/generated/web-detective.spec.ts')
   if (!fs.existsSync(testFile)) {
@@ -135,7 +132,7 @@ void (async () => {
  * Task A — Introduce a deliberate failure, watch the healer fix it:
  *   Open tests/generated/web-detective.spec.ts.
  *   Change one getByRole() call to a broken selector like page.locator('.gone').
- *   Run this file — observe the healer extract the block, ask Claude, and patch it.
+ *   Run this file — observe the healer extract the block, ask the local model, and patch it.
  *
  * Task B — Compare the two healing strategies:
  *   CH4 healer targets broken selector strings stored in LocatorStore.
@@ -148,6 +145,6 @@ void (async () => {
  *   Compare its patches to what this programmatic healer produces.
  *
  * Task D — Guard against infinite loops:
- *   What happens if Claude's patch introduces a new failure?
+ *   What happens if the model's patch introduces a new failure?
  *   Add a check that rejects patches that re-introduce the same error message.
  */

@@ -374,10 +374,14 @@ Each chapter has its own workflow file, scoped to its `paths`:
 
 #### Running the agentic jobs (Ch5 + Ch7) in CI
 
-Locally the agentic examples talk to Ollama, so they need no secret. Running them
-inside GitHub Actions requires Ollama to be available on the runner — either a
-self-hosted runner with Ollama installed, or an Ollama setup/model-pull step added
-to the workflow. This is left as an exercise.
+The agentic examples talk to a local Ollama server — no secret required. The
+workflows install and start Ollama on the runner automatically via the shared
+composite action [.github/actions/setup-ollama](.github/actions/setup-ollama/action.yml),
+then pull the model. Because GitHub-hosted runners are CPU-only, CI uses a smaller
+model (`deepseek-r1:1.5b`, set via `WORKSHOP_MODEL` in each job) rather than the
+`deepseek-r1:8b` default used locally, and the agentic jobs carry a `timeout-minutes`
+guard. For faster, more reliable runs, use a self-hosted runner (ideally with a GPU)
+and bump `WORKSHOP_MODEL` back up.
 
 #### Add a new scenario
 

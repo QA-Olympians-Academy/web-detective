@@ -111,6 +111,18 @@ export class LocatorStore {
     }
     console.log('────────────────────────────────────────────────────────\n')
   }
+
+  // ── Task D — diff-friendly flat export ──────────────────────────────────────
+
+  /** One CSV line per entry: key,selector,healCount,lastVerified (header first). */
+  toCsv(): string {
+    const escape = (v: string) => (/[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v)
+    const header = 'key,selector,healCount,lastVerified'
+    const rows = [...this.entries.values()].map(e =>
+      [e.key, e.selector, String(e.healCount), e.lastVerified].map(escape).join(','),
+    )
+    return [header, ...rows].join('\n')
+  }
 }
 
 // ── Seed data — web-detective app locators ────────────────────────────────────
@@ -131,6 +143,9 @@ export const WEB_DETECTIVE_LOCATORS: Array<[string, string]> = [
   ['products.searchInput', 'input[placeholder*="Search"]'],
   ['products.tableRows',   'tbody tr'],
   ['products.footer',      '.table-footer'],
+  // Task B — two elements discovered from the live /products page:
+  ['products.skuHeader',   'th:has-text("SKU")'],       // a column header
+  ['products.listHeading', '.table-toolbar h3'],        // "All Products (N)" toolbar heading
 ]
 
 /**

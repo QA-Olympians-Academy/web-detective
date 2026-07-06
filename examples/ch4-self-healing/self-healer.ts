@@ -87,15 +87,18 @@ export class SelfHealingAgent {
     brokenSelector: string,
     accessibilityTree: string,
   ): Promise<string[]> {
-    const system = `You are a Playwright selector expert. Given a broken CSS/ARIA selector and the
-current accessibility tree of a web page, return 3-5 alternative Playwright selectors
+    const system = `You are a Playwright selector expert. Given a broken selector and the
+current accessibility tree of a web page, return 3-5 alternative selectors
 that would locate the same element.
 
-Rules:
-- Prefer ARIA selectors: getByRole, getByLabel, getByText, getByPlaceholder
-- Fall back to semantic CSS classes (not structural nth-child paths)
-- Return ONLY a JSON array of selector strings, no explanation
-- Order from most stable (ARIA) to least stable (CSS)`
+The selectors MUST be strings accepted by page.locator(). That means:
+- Playwright engine syntax for ARIA, e.g. role=textbox[name="Email address"], role=button[name="Sign In"]
+- text engine, e.g. text="Email address"
+- semantic CSS: #id, input[type="email"], .semantic-class (NEVER structural nth-child paths)
+Do NOT return fluent API calls like getByRole(...) or getByLabel(...) — page.locator() cannot parse those.
+
+Return ONLY a JSON array of selector strings, no explanation.
+Order from most stable (role=) to least stable (CSS).`
 
     const text = await complete(
       system,
@@ -106,7 +109,7 @@ Current accessibility tree:
 ${accessibilityTree}
 
 Return a JSON array of 3-5 alternative Playwright selectors for this element.`,
-      { maxTokens: 1024 },
+      { maxTokens: 3072 }, // reasoning models (DeepSeek-R1) need headroom beyond <think>…</think>
     )
 
     return extractJson<string[]>(text) ?? []

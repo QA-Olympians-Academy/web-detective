@@ -53,7 +53,7 @@ export class WebTestAgent {
     const start = Date.now()
     this.steps = []
 
-    const browser = await chromium.launch({ headless: true })
+    const browser = await chromium.launch({ headless: process.env.HEADED !== '1' })
     const context = await browser.newContext({ baseURL: 'http://localhost:5173' })
     this.page = await context.newPage()
 

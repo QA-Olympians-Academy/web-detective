@@ -69,7 +69,7 @@ export class TestPlannerAgent {
   // ── Exploration ──────────────────────────────────────────────────────────
 
   private async exploreRoutes(baseUrl: string, routes: string[]): Promise<PageSnapshot[]> {
-    const browser = await chromium.launch({ headless: true })
+    const browser = await chromium.launch({ headless: process.env.HEADED !== '1' })
     const context = await browser.newContext({ baseURL: baseUrl })
     const page = await context.newPage()
 

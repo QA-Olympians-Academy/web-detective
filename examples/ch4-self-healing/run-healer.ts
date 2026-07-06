@@ -10,7 +10,10 @@
  *
  * Prereqs: dev server on :5173 AND Ollama on :11434 with the model pulled.
  *
- *   npx tsx examples/ch4-self-healing/run-healer.ts
+ * MODEL: use llama3.1 — the default deepseek-r1:8b spends its whole token budget
+ * inside <think>…</think> and returns empty output, so the healer gets no candidates.
+ *
+ *   WORKSHOP_MODEL=llama3.1:latest npx tsx examples/ch4-self-healing/run-healer.ts
  */
 import { chromium } from 'playwright'
 import { LocatorStore, WEB_DETECTIVE_LOCATORS } from './locator-store'

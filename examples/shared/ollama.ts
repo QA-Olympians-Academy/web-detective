@@ -20,8 +20,8 @@
  */
 import ollama from 'ollama'
 
-/** Default local model. Cheapest sensible tier for the workshop; override per run. */
-export const MODEL = process.env.WORKSHOP_MODEL ?? 'deepseek-r1:8b'
+/** Default local model. Fast, non-reasoning, reliable JSON; override per run. */
+export const MODEL = process.env.WORKSHOP_MODEL ?? 'llama3.1:latest'
 
 /** A single chat turn, mirroring Ollama's message shape. */
 export interface ChatMessage {

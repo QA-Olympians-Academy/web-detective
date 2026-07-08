@@ -45,6 +45,7 @@ export async function chat(
   messages: ChatMessage[],
   opts: { maxTokens?: number; temperature?: number } = {},
 ): Promise<{ text: string; promptTokens: number; outputTokens: number }> {
+  console.log(`[Ollama] ${messages.length} messages → ${MODEL} (temp=${opts.temperature ?? 0.2})`)
   const res = await ollama.chat({
     model: MODEL,
     messages,
@@ -87,8 +88,8 @@ export async function complete(
 export async function checkOllama(): Promise<{ ok: boolean; error?: string }> {
   try {
     const { models } = await ollama.list()
-    const names = models.map(m => m.name)
-    if (!names.some(n => n === MODEL || n.startsWith(`${MODEL}:`) || `${n}`.startsWith(MODEL))) {
+    const names = models.map((m) => m.name)
+    if (!names.some((n) => n === MODEL || n.startsWith(`${MODEL}:`) || `${n}`.startsWith(MODEL))) {
       return { ok: false, error: `Model "${MODEL}" not found. Run: ollama pull ${MODEL}` }
     }
     return { ok: true }

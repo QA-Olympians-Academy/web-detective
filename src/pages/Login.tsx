@@ -6,10 +6,10 @@ export default function Login() {
   const { isAuthenticated, login } = useAuth()
   const navigate = useNavigate()
 
-  const [email, setEmail]       = useState('')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError]       = useState('')
-  const [loading, setLoading]   = useState(false)
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
 
   // Already logged in — bounce to dashboard
   if (isAuthenticated) {
@@ -40,7 +40,9 @@ export default function Login() {
     <div className="login-page">
       <div className="login-card">
         <div className="login-logo">
-          <h1>Shop<span>Admin</span></h1>
+          <h1>
+            Shop<span>Admin</span>
+          </h1>
           <p>Sign in to your dashboard</p>
         </div>
 
@@ -50,7 +52,7 @@ export default function Login() {
           <div className="form-group">
             <label htmlFor="email">Email address</label>
             <input
-              id="email"
+              id="badselector"
               type="email"
               placeholder="admin@shop.com"
               value={email}

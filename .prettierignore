@@ -1,0 +1,10 @@
+node_modules
+dist
+build
+coverage
+playwright-report
+test-results
+tests/generated
+specs
+locators.json
+*.pptx

@@ -70,7 +70,9 @@ export class SelfHealingAgent {
    * Healing loop: snapshot DOM → ask LLM → validate candidates → persist winner.
    */
   async heal(page: Page, key: string, brokenSelector: string): Promise<HealResult> {
-    const domText = (await page.locator('body').ariaSnapshot()).slice(0, 4000) // cap for token budget
+    // Feed the real DOM HTML (not an ARIA snapshot): CSS-selector generation needs the
+    // concrete id/name/type/class/placeholder attributes, which an ARIA tree omits.
+    const domText = (await page.locator('body').innerHTML()).slice(0, 4000) // cap for token budget
 
     const candidates = await this.askLLMForCandidates(key, brokenSelector, domText)
 
@@ -99,10 +101,10 @@ export class SelfHealingAgent {
   private async askLLMForCandidates(
     key: string,
     brokenSelector: string,
-    accessibilityTree: string,
+    pageHtml: string,
   ): Promise<string[]> {
     const system = `You are a Playwright selector expert. Given a broken selector and the
-page's accessibility tree, return 3-5 alternative CSS selector strings for the same element.
+page's HTML, return 3-5 alternative CSS selector strings for the same element.
 The strings go straight into page.locator(selector), so they must be plain CSS.
 
 Rules:
@@ -119,10 +121,10 @@ Rules:
       `Element key: "${key}"
 Broken selector: "${brokenSelector}"
 
-Current accessibility tree:
-${accessibilityTree}
+Current page HTML:
+${pageHtml}
 
-Return a JSON array of 3-5 alternative Playwright selectors for this element.`,
+Return a JSON array of 3-5 alternative CSS selectors for this element.`,
       { maxTokens: 2048 },
     )
 

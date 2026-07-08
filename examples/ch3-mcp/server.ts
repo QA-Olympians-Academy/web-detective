@@ -25,7 +25,7 @@ let page: Page | null = null
 
 async function getPage(): Promise<Page> {
   if (!browser) {
-    browser = await chromium.launch({ headless: true })
+    browser = await chromium.launch({ headless: true, channel: 'chrome' })
     const context = await browser.newContext({
       baseURL: 'http://localhost:5173',
       viewport: { width: 1280, height: 800 },

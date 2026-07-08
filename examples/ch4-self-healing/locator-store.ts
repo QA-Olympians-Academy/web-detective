@@ -1,5 +1,9 @@
+// @ts-nocheck
 /**
- * CH4 — LOCATOR STORE (persistent locator memory)
+ * CH4 EXERCISE FILE — LOCATOR STORE (persistent locator memory)
+ *
+ * This is a starter stub. Implement the method bodies live during the workshop.
+ * Full reference implementation: `git checkout solutions` and see SOLUTIONS.md.
  *
  * Records the current best selector for each logical element.
  * When a selector breaks, the healer proposes a replacement and writes it here.
@@ -65,15 +69,13 @@ export class LocatorStore {
 
   heal(key: string, newSelector: string): void {
     const entry = this.entries.get(key)
-    if (!entry) return
-
-    entry.fallbacks.unshift(entry.selector) // push old selector to fallbacks
-    entry.selector = newSelector
-    entry.healCount += 1
-    entry.lastHealed = new Date().toISOString()
-    this.save()
-
-    console.log(`[LocatorStore] Healed "${key}": "${entry.fallbacks[0]}" → "${newSelector}"`)
+    if (entry) {
+      entry.fallbacks.unshift(entry.selector)
+      entry.selector = newSelector
+      entry.healCount++
+      entry.lastHealed = new Date().toISOString()
+      this.save()
+    }
   }
 
   // ── Persistence ───────────────────────────────────────────────────────────
@@ -107,37 +109,39 @@ export class LocatorStore {
     }
     console.log('────────────────────────────────────────────────────────\n')
   }
-
-  toCsv(): string {
-    const header = 'key,selector,healCount,lastVerified'
-    const quote = (v: string) => `"${v.replace(/"/g, '""')}"`
-    const rows = [...this.entries.values()].map((e) =>
-      [quote(e.key), quote(e.selector), e.healCount, quote(e.lastVerified)].join(','),
-    )
-    return [header, ...rows].join('\n')
-  }
 }
 
 // ── Seed data — web-detective app locators ────────────────────────────────────
 
 export const WEB_DETECTIVE_LOCATORS: Array<[string, string]> = [
-  ['login.emailInput', 'label:has-text("Email address") + input, input#email'],
-  ['login.passwordInput', 'label:has-text("Password") + input, input#password'],
-  ['login.submitButton', 'button:has-text("Sign In")'],
-  ['login.errorMessage', '.form-error'],
-  ['nav.brand', '.navbar-brand'],
-  ['nav.dashboardLink', 'a:has-text("Dashboard")'],
-  ['nav.productsLink', 'a:has-text("Products")'],
-  ['nav.user', 'span:has-text("admin@shop.com")'],
-  ['nav.logoutButton', 'button:has-text("Logout")'],
-  ['dashboard.heading', 'h2:has-text("Dashboard")'],
-  ['dashboard.statCards', '.stat-card'],
-  ['dashboard.chartCards', '.chart-card'],
-  ['products.heading', 'h2:has-text("Products")'],
-  ['products.searchInput', 'input[placeholder*="Search"]'],
-  ['products.header.name', 'th:has-text("Product Name")'],
-  ['products.tableRows', 'tbody tr'],
-  ['products.footer', '.table-footer'],
+  // ── Login (/login) ──
+  ['login.emailInput', 'input#email'],
+  ['login.passwordInput', 'input#password'],
+  ['login.submitButton', 'getByRole("button", { name: "Sign In" })'],
+  ['login.brandHeading', 'getByRole("heading", { name: "ShopAdmin" })'],
+
+  // ── Nav (all authed pages) ──
+  ['nav.dashboardLink', 'getByRole("link", { name: "Dashboard" })'],
+  ['nav.productsLink', 'getByRole("link", { name: "Products" })'],
+  ['nav.logoutButton', 'getByRole("button", { name: "Logout" })'],
+
+  // ── Dashboard (/dashboard) ──
+  ['dashboard.heading', 'getByRole("heading", { name: "Dashboard" })'],
+  ['dashboard.monthlySalesCard', 'getByRole("heading", { name: "Monthly Sales" })'],
+  ['dashboard.revenueTrendCard', 'getByRole("heading", { name: "Revenue Trend" })'],
+
+  // ── Products (/products) ──
+  ['products.heading', 'getByRole("heading", { name: "Products" })'],
+  ['products.searchInput', 'getByPlaceholder("Search by name, category or SKU…")'],
+  ['products.countHeading', 'getByRole("heading", { name: /All Products \\(\\d+\\)/ })'],
+
+  // ── Products table column headers (/products, after login) ──
+  ['products.header.sku', 'getByRole("columnheader", { name: "SKU" })'],
+  ['products.header.name', 'getByRole("columnheader", { name: "Product Name" })'],
+  ['products.header.category', 'getByRole("columnheader", { name: "Category" })'],
+  ['products.header.price', 'getByRole("columnheader", { name: "Price" })'],
+  ['products.header.stock', 'getByRole("columnheader", { name: "Stock" })'],
+  ['products.header.status', 'getByRole("columnheader", { name: "Status" })'],
 ]
 
 /**

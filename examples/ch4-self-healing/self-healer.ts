@@ -1,5 +1,9 @@
+// @ts-nocheck
 /**
- * CH4 — SELF-HEALING AGENT
+ * CH4 EXERCISE FILE — SELF-HEALING AGENT
+ *
+ * This is a starter stub. Implement the method bodies live during the workshop.
+ * Full reference implementation: `git checkout solutions` and see SOLUTIONS.md.
  *
  * Detects when a locator fails at runtime, asks an LLM to rank alternative
  * selectors from the live DOM, validates the best candidate, and persists
@@ -70,13 +74,10 @@ export class SelfHealingAgent {
    * Healing loop: snapshot DOM → ask LLM → validate candidates → persist winner.
    */
   async heal(page: Page, key: string, brokenSelector: string): Promise<HealResult> {
-    // Feed the real DOM HTML (not an ARIA snapshot): CSS-selector generation needs the
-    // concrete id/name/type/class/placeholder attributes, which an ARIA tree omits.
     const domText = (await page.locator('body').innerHTML()).slice(0, 4000) // cap for token budget
 
     const candidates = await this.askLLMForCandidates(key, brokenSelector, domText)
 
-    console.log('Candidates are: ', candidates)
     for (const candidate of candidates) {
       const found = await page
         .locator(candidate)
@@ -97,36 +98,37 @@ export class SelfHealingAgent {
   }
 
   // ── LLM integration ──────────────────────────────────────────────────────
-
+  //
+  // Prompt the local model with the broken selector + accessibility tree via
+  // complete(system, user), then extractJson<string[]>() the ranked candidates.
   private async askLLMForCandidates(
     key: string,
     brokenSelector: string,
-    pageHtml: string,
+    accessibilityTree: string,
   ): Promise<string[]> {
-    const system = `You are a Playwright selector expert. Given a broken selector and the
-page's HTML, return 3-5 alternative CSS selector strings for the same element.
-The strings go straight into page.locator(selector), so they must be plain CSS.
+    const system = `You are a Playwright selector expert. Given a broken CSS/ARIA selector and the
+current html snapshot of a web page, return 3-5 alternative Playwright selectors
+that would locate the same element.
 
 Rules:
-- Use attribute/id selectors: input[type="email"], input[name="email"], #email, [placeholder="..."], [aria-label="..."]
-- For a form field (input/textarea/select), always target the field itself with an attribute selector. Never use text="..." or :has-text() for a field — that matches the label, not the input, and fill() fails.
-- Forbidden: getBy* method calls, XPath, and brittle nth-child paths.
-- Return ONLY a JSON array of strings — no prose, no explanation.`
+- Prefer CSS selectors: id,name,class,attribute,ARIA,structural
+- Fall back to semantic CSS classes (not structural nth-child paths)
+- Return ONLY a JSON array of selector strings, no explanation
+- Order from most stable (ARIA) to least stable (CSS)`
 
-    console.log(
-      `[SelfHealer] Asking LLM for alternatives for "${key}" (broken selector: "${brokenSelector}")... "${system}"`,
-    )
     const text = await complete(
       system,
       `Element key: "${key}"
 Broken selector: "${brokenSelector}"
 
-Current page HTML:
-${pageHtml}
+Current accessibility tree:
+${accessibilityTree}
 
-Return a JSON array of 3-5 alternative CSS selectors for this element.`,
-      { maxTokens: 2048 },
+Return a JSON array of 3-5 alternative Playwright selectors for this element.`,
+      { maxTokens: 1024 },
     )
+
+    console.log(`[SelfHealer] LLM returned candidates for "${key}": ${text}"`)
 
     return extractJson<string[]>(text) ?? []
   }

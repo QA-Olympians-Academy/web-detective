@@ -45,7 +45,10 @@ export class SelfHealingAgent {
 
     if (!selector) throw new Error(`No selector registered for key "${key}"`)
 
-    const visible = await page.locator(selector).isVisible().catch(() => false)
+    const visible = await page
+      .locator(selector)
+      .isVisible()
+      .catch(() => false)
     if (visible) {
       this.store.markVerified(key)
       return selector
@@ -55,7 +58,9 @@ export class SelfHealingAgent {
     const result = await this.heal(page, key, selector)
 
     if (!result.healed || !result.newSelector) {
-      throw new Error(`Failed to heal selector for "${key}". Tried: ${result.candidates.join(', ')}`)
+      throw new Error(
+        `Failed to heal selector for "${key}". Tried: ${result.candidates.join(', ')}`,
+      )
     }
 
     return result.newSelector
@@ -69,11 +74,20 @@ export class SelfHealingAgent {
 
     const candidates = await this.askLLMForCandidates(key, brokenSelector, domText)
 
+    console.log('Candidates are: ', candidates)
     for (const candidate of candidates) {
-      const found = await page.locator(candidate).isVisible().catch(() => false)
+      const found = await page
+        .locator(candidate)
+        .isVisible()
+        .catch(() => false)
       if (found) {
         this.store.heal(key, candidate)
-        return { healed: true, originalSelector: brokenSelector, newSelector: candidate, candidates }
+        return {
+          healed: true,
+          originalSelector: brokenSelector,
+          newSelector: candidate,
+          candidates,
+        }
       }
     }
 
@@ -87,16 +101,33 @@ export class SelfHealingAgent {
     brokenSelector: string,
     accessibilityTree: string,
   ): Promise<string[]> {
-    const system = `You are a Playwright selector expert. Given a broken CSS/ARIA selector and the
-current accessibility tree of a web page, return 3-5 alternative Playwright selectors
+    const system = `You are a Playwright selector expert. Given a broken selector and the
+current accessibility tree of a web page, return 3-5 alternative selector STRINGS
 that would locate the same element.
 
-Rules:
-- Prefer ARIA selectors: getByRole, getByLabel, getByText, getByPlaceholder
-- Fall back to semantic CSS classes (not structural nth-child paths)
-- Return ONLY a JSON array of selector strings, no explanation
-- Order from most stable (ARIA) to least stable (CSS)`
+These strings are passed directly to page.locator(selector), so they MUST be
+CSS or Playwright text-engine selectors — NOT getBy* method calls.
 
+Rules:
+- ALLOWED: CSS attribute/id/class selectors, e.g.
+    input[type="email"]
+    input[name="email"]
+    input[placeholder="Email address"]
+    input[aria-label="Email address"]
+    #email
+- The text engine (text="..." or :has-text("...")) is ONLY for non-input elements
+  such as buttons and links. NEVER use it to target a form field: text matches the
+  visible <label>, not the <input>, so fill() will fail.
+- For inputs/textareas/selects, ALWAYS use an attribute selector on the field itself
+  (type, name, id, placeholder, aria-label). Include the element tag, e.g. input[...].
+- FORBIDDEN: getByRole(...), getByLabel(...), getByText(...), getByPlaceholder(...),
+  XPath, and brittle structural paths like div > div:nth-child(3) > input
+- Return ONLY a JSON array of selector strings, no explanation
+- Order from most stable to least stable`
+
+    console.log(
+      `[SelfHealer] Asking LLM for alternatives for "${key}" (broken selector: "${brokenSelector}")... "${system}"`,
+    )
     const text = await complete(
       system,
       `Element key: "${key}"
@@ -106,7 +137,7 @@ Current accessibility tree:
 ${accessibilityTree}
 
 Return a JSON array of 3-5 alternative Playwright selectors for this element.`,
-      { maxTokens: 1024 },
+      { maxTokens: 2048 },
     )
 
     return extractJson<string[]>(text) ?? []

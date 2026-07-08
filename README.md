@@ -57,7 +57,7 @@ Run the brittle test to see it pass, then intentionally break a selector to see 
 
 ```bash
 # Run the anti-pattern test
-npx playwright test examples/ch1-foundations/brittle-test.spec.ts --headed
+npx playwright test --config=pw-examples.config.ts examples/ch1-foundations/brittle-test.spec.ts --headed
 
 # Inspect the typed task graph structure
 npx tsx -e "import { describeGraph, loginTaskGraph } from './examples/ch1-foundations/task-graph.ts'; describeGraph(loginTaskGraph)"

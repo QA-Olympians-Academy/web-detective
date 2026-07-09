@@ -9,10 +9,7 @@
 name: CH6 — Skills Validation
 
 on:
-  # push:
-  #   branches: [main]
-  #   paths:
-  #     - '.claude/skills/**'
+  workflow_dispatch:
   pull_request:
     branches: [main]
     paths:

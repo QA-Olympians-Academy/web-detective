@@ -9,11 +9,7 @@
 name: CH1 — Foundations
 
 on:
-  # push:
-  #   branches: [main]
-  #   paths:
-  #     - 'examples/ch1-foundations/**'
-  #     - 'tsconfig.examples.json'
+  workflow_dispatch:
   pull_request:
     branches: [main]
     paths:

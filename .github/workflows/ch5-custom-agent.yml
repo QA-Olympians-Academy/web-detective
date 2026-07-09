@@ -11,12 +11,7 @@
 name: CH5 — Custom Agent
 
 on:
-  # push:
-  #   branches: [main]
-  #   paths:
-  #     - 'examples/ch5-custom-agent/**'
-  #     - 'src/**'
-  #     - 'tsconfig.examples.json'
+  workflow_dispatch:
   pull_request:
     branches: [main]
     paths:
@@ -86,8 +81,8 @@ jobs:
     name: Agent Smoke Test
     runs-on: ubuntu-latest
     needs: type-check
-    # Local CPU inference is slow — only run on main branch pushes
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    # Local CPU inference is slow — only run on main/solutions branch pushes
+    if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/solutions') && github.event_name == 'push'
     timeout-minutes: 30
     env:
       WORKSHOP_MODEL: deepseek-r1:1.5b

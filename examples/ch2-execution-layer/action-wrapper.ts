@@ -102,9 +102,14 @@ export class ActionWrapper {
 
   async assertUrl(pattern: string): Promise<ActionResult> {
     return this.run('assert_url', pattern, async () => {
-      const url = this.page.url()
-      if (!url.includes(pattern)) {
-        throw new Error(`Expected URL to include "${pattern}" but got "${url}"`)
+      // The URL can lag behind the action that triggers it — e.g. an async
+      // login followed by a client-side redirect. Reading page.url() straight
+      // away races the navigation, so wait for it to match (keeping the same
+      // substring/"includes" semantics) before asserting.
+      try {
+        await this.page.waitForURL((url) => url.href.includes(pattern), { timeout: 5000 })
+      } catch {
+        throw new Error(`Expected URL to include "${pattern}" but got "${this.page.url()}"`)
       }
     })
   }

@@ -1,7 +1,9 @@
 import { defineConfig, devices } from '@playwright/test'
 
 export default defineConfig({
-  testDir: './tests',
+  // Default suite lives in ./tests. CI jobs that run a spec elsewhere
+  // (e.g. the ch1 brittle test in examples/) set PW_TESTDIR to point here.
+  testDir: process.env.PW_TESTDIR ?? './tests',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,

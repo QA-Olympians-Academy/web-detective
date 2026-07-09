@@ -57,7 +57,11 @@ jobs:
         # This spec intentionally uses anti-patterns — it should still pass
         # against the unmodified app. The workshop task is to break it by
         # renaming a CSS class and watching it fail.
-        run: npx playwright test examples/ch1-foundations/brittle-test.spec.ts --project=chromium --reporter=list
+        # The brittle test lives outside the default ./tests dir, so point
+        # Playwright's testDir at it via PW_TESTDIR (see playwright.config.ts).
+        env:
+          PW_TESTDIR: examples/ch1-foundations
+        run: npx playwright test brittle-test.spec.ts --project=chromium --reporter=list
 
       - name: Verify task-graph exports
         run: |

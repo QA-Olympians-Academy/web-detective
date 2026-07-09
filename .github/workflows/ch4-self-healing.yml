@@ -9,12 +9,7 @@
 name: CH4 — Self-Healing
 
 on:
-  # push:
-  #   branches: [main]
-  #   paths:
-  #     - 'examples/ch4-self-healing/**'
-  #     - 'src/**'               # re-run if app changes break selectors
-  #     - 'tsconfig.examples.json'
+  workflow_dispatch:
   pull_request:
     branches: [main]
     paths:

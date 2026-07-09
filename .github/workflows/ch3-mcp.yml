@@ -8,11 +8,7 @@
 name: CH3 — MCP Server
 
 on:
-  # push:
-  #   branches: [main]
-  #   paths:
-  #     - 'examples/ch3-mcp/**'
-  #     - 'tsconfig.examples.json'
+  workflow_dispatch:
   pull_request:
     branches: [main]
     paths:

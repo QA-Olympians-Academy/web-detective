@@ -20,6 +20,8 @@ export default defineConfig({
   webServer: {
     command: 'npm run dev',
     url: 'http://localhost:5173',
-    reuseExistingServer: !process.env.CI,
+    // CI workflows pre-start the dev server (npm run dev & + wait-on),
+    // so always reuse it rather than trying to bind the port a second time.
+    reuseExistingServer: true,
   },
 })

@@ -160,7 +160,7 @@ export class TestHealerAgent {
   // ── Live DOM snapshot at the point of failure ─────────────────────────────
 
   private async liveSnapshot(baseUrl: string, _filePath: string): Promise<string> {
-    const browser = await chromium.launch({ headless: process.env.HEADED !== '1' })
+    const browser = await chromium.launch({ headless: process.env.HEADED !== '1', channel: 'chrome' })
     const context = await browser.newContext({ baseURL: baseUrl })
     const page = await context.newPage()
 

@@ -37,7 +37,9 @@ Write the call verbatim as the selector string, e.g. "getByRole('link', { name: 
 
 ## Action constraints
 - Use the 'done' tool as soon as the goal is achieved or definitively failed.
-- Do not loop more than 15 tool calls — if the goal is not met by then, call done with passed=false.
+- You have a budget of {{MAX_TURNS}} tool calls. Do not give up early: keep working
+  through every step of the goal and only call done with passed=false once you have
+  exhausted the budget or hit a definitive failure you cannot recover from.
 - Do not invent selectors — use only roles/names that appear in the snapshot output.
 - If a click or fill returns a locator error, call snapshot() again and re-plan using
   only the roles and names in that fresh snapshot — do not repeat the failed selector.

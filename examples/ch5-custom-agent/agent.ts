@@ -95,7 +95,12 @@ export class WebTestAgent {
     const start = Date.now()
     this.steps = []
 
-    const browser = await chromium.launch({ headless: process.env.HEADED !== '1' })
+    // Use the installed Google Chrome (channel) to match playwright.config.ts,
+    // so no separate bundled-chromium download is needed.
+    const browser = await chromium.launch({
+      headless: process.env.HEADED !== '1',
+      channel: 'chrome',
+    })
     const context = await browser.newContext({ baseURL: 'http://localhost:5173' })
     this.page = await context.newPage()
 

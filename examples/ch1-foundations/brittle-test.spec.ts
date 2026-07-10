@@ -23,8 +23,10 @@ test.describe('Login flow — brittle version', () => {
     await page.click('.login-card > form > div:nth-child(2) > input')
     await page.type('.login-card > form > div:nth-child(2) > input', 'password123')
 
-    // ❌ Clicking by position — any new button in the form breaks this.
-    await page.click('.login-card > form > button:nth-child(1)')
+    // ❌ Clicking by position — any new field added above the button shifts
+    //    this index and breaks the click. (Button is the form's 3rd child:
+    //    email group, password group, then the submit button.)
+    await page.click('.login-card > form > button:nth-child(3)')
 
     // ❌ Hardcoded sleep instead of waiting for the actual state change.
     await page.waitForTimeout(1500)

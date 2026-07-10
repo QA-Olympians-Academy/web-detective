@@ -106,14 +106,15 @@ Steps to verify:
   productSearch: (query: string, expectedCount: number) => `
 Goal: Verify the product search on the products page filters correctly.
 
-Pre-condition: Logged in as ${ctx.credentials!.email}
-Start at: ${ctx.baseUrl}/products
+Note: ${ctx.baseUrl}/products requires authentication — visiting it while logged
+out redirects to /login. You MUST log in first, then navigate to /products.
 
 Steps to verify:
-1. Confirm there are 15 products in the initial list
-2. Type "${query}" into the search input
-3. Assert the table shows exactly ${expectedCount} rows
-4. Assert the footer text says "Showing ${expectedCount} of 15 products"
+1. Navigate to ${ctx.baseUrl}/login and log in with ${ctx.credentials!.email} / ${ctx.credentials!.password}
+2. Navigate to ${ctx.baseUrl}/products and confirm there are 15 products in the initial list
+3. Type "${query}" into the search input
+4. Assert the table shows exactly ${expectedCount} rows
+5. Assert the footer text says "Showing ${expectedCount} of 15 products"
 `,
 
   /** E2E: login → navigate → search ──────────────────────────────────────── */

@@ -39,22 +39,13 @@ jobs:
           echo "All skill directories have SKILL.md"
 
       - name: Validate required frontmatter fields
+        # TODO (Chapter 6): implement this step during the workshop.
+        # Loop over every .claude/skills/*/SKILL.md and fail the job if any is
+        # missing a 'name' or 'description' frontmatter field.
+        # Reference implementation: git checkout solutions
         run: |
-          ERRORS=0
-          for skill in .claude/skills/*/SKILL.md; do
-            NAME=$(grep -m1 '^name:' "$skill" | sed 's/name: *//')
-            DESC=$(grep -m1 '^description:' "$skill" | sed 's/description: *//')
-            if [ -z "$NAME" ]; then
-              echo "FAIL [$skill]: missing 'name' field"
-              ERRORS=1
-            fi
-            if [ -z "$DESC" ]; then
-              echo "FAIL [$skill]: missing 'description' field"
-              ERRORS=1
-            fi
-            echo "OK   $skill (name=$NAME)"
-          done
-          [ "$ERRORS" -eq 0 ] || exit 1
+          echo "TODO (Chapter 6): validate name + description frontmatter on every SKILL.md"
+          exit 1
 
       - name: Warn if \$ARGUMENTS is used without argument-hint
         run: |

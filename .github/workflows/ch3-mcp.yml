@@ -51,10 +51,13 @@ jobs:
       - run: npx playwright install chromium --with-deps
 
       - name: Start MCP server (5-second boot check)
-        # The server listens on stdio — send EOF immediately and verify exit is clean
+        # TODO (Chapter 3): implement this step during the workshop.
+        # Boot examples/ch3-mcp/server.ts on stdio, send EOF immediately, and
+        # confirm the process initialises without crashing.
+        # Reference implementation: git checkout solutions
         run: |
-          timeout 5 npx tsx examples/ch3-mcp/server.ts < /dev/null || true
-          echo "MCP server boot check passed"
+          echo "TODO (Chapter 3): boot the MCP server and verify a clean start"
+          exit 1
 
   tool-schema-check:
     name: Tool Schema Validation

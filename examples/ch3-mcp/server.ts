@@ -67,14 +67,15 @@ const tools: Tool[] = [
       type: 'object',
       properties: {
         selector: { type: 'string', description: 'Playwright selector for the input' },
-        value:    { type: 'string', description: 'Text to type' },
+        value: { type: 'string', description: 'Text to type' },
       },
       required: ['selector', 'value'],
     },
   },
   {
     name: 'browser_snapshot',
-    description: 'Return the accessibility tree of the current page. Use this to understand the page structure before clicking or filling.',
+    description:
+      'Return the accessibility tree of the current page. Use this to understand the page structure before clicking or filling.',
     inputSchema: {
       type: 'object',
       properties: {},
@@ -86,7 +87,10 @@ const tools: Tool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        fullPage: { type: 'boolean', description: 'Capture the full scrollable page (default: false)' },
+        fullPage: {
+          type: 'boolean',
+          description: 'Capture the full scrollable page (default: false)',
+        },
       },
     },
   },
@@ -142,22 +146,26 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case 'browser_fill': {
         await p.locator(args.selector as string).fill(args.value as string)
-        return { content: [{ type: 'text', text: `Filled "${args.selector}" with "${args.value}"` }] }
+        return {
+          content: [{ type: 'text', text: `Filled "${args.selector}" with "${args.value}"` }],
+        }
       }
 
       case 'browser_snapshot': {
-        const tree = await p.locator('body').ariaSnapshot()
+        const tree = await p.locator('body').innerHTML()
         return { content: [{ type: 'text', text: tree }] }
       }
 
       case 'browser_screenshot': {
         const buf = await p.screenshot({ fullPage: (args.fullPage as boolean) ?? false })
         return {
-          content: [{
-            type: 'image',
-            data: buf.toString('base64'),
-            mimeType: 'image/png',
-          }],
+          content: [
+            {
+              type: 'image',
+              data: buf.toString('base64'),
+              mimeType: 'image/png',
+            },
+          ],
         }
       }
 
@@ -165,12 +173,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const url = p.url()
         const ok = url.includes(args.contains as string)
         return {
-          content: [{
-            type: 'text',
-            text: ok
-              ? `✓ URL "${url}" contains "${args.contains}"`
-              : `✗ URL "${url}" does NOT contain "${args.contains}"`,
-          }],
+          content: [
+            {
+              type: 'text',
+              text: ok
+                ? `✓ URL "${url}" contains "${args.contains}"`
+                : `✗ URL "${url}" does NOT contain "${args.contains}"`,
+            },
+          ],
         }
       }
 
@@ -178,12 +188,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const locator = p.locator(args.selector as string)
         const visible = await locator.isVisible()
         return {
-          content: [{
-            type: 'text',
-            text: visible
-              ? `✓ Element "${args.selector}" is visible`
-              : `✗ Element "${args.selector}" is NOT visible`,
-          }],
+          content: [
+            {
+              type: 'text',
+              text: visible
+                ? `✓ Element "${args.selector}" is visible`
+                : `✗ Element "${args.selector}" is NOT visible`,
+            },
+          ],
         }
       }
 

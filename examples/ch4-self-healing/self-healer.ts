@@ -45,7 +45,10 @@ export class SelfHealingAgent {
 
     if (!selector) throw new Error(`No selector registered for key "${key}"`)
 
-    const visible = await page.locator(selector).isVisible().catch(() => false)
+    const visible = await page
+      .locator(selector)
+      .isVisible()
+      .catch(() => false)
     if (visible) {
       this.store.markVerified(key)
       return selector
@@ -55,7 +58,9 @@ export class SelfHealingAgent {
     const result = await this.heal(page, key, selector)
 
     if (!result.healed || !result.newSelector) {
-      throw new Error(`Failed to heal selector for "${key}". Tried: ${result.candidates.join(', ')}`)
+      throw new Error(
+        `Failed to heal selector for "${key}". Tried: ${result.candidates.join(', ')}`,
+      )
     }
 
     return result.newSelector
@@ -65,15 +70,23 @@ export class SelfHealingAgent {
    * Healing loop: snapshot DOM → ask LLM → validate candidates → persist winner.
    */
   async heal(page: Page, key: string, brokenSelector: string): Promise<HealResult> {
-    const domText = (await page.locator('body').ariaSnapshot()).slice(0, 4000) // cap for token budget
+    const domText = (await page.locator('body').innerHTML()).slice(0, 4000) // cap for token budget
 
     const candidates = await this.askLLMForCandidates(key, brokenSelector, domText)
 
     for (const candidate of candidates) {
-      const found = await page.locator(candidate).isVisible().catch(() => false)
+      const found = await page
+        .locator(candidate)
+        .isVisible()
+        .catch(() => false)
       if (found) {
         this.store.heal(key, candidate)
-        return { healed: true, originalSelector: brokenSelector, newSelector: candidate, candidates }
+        return {
+          healed: true,
+          originalSelector: brokenSelector,
+          newSelector: candidate,
+          candidates,
+        }
       }
     }
 

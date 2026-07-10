@@ -41,7 +41,7 @@ interface AgentAction {
 }
 
 const MAX_TURNS = 15
-const TOOL_NAMES = new Set<string>(AGENT_TOOLS.map(t => t.name))
+const TOOL_NAMES = new Set<string>(AGENT_TOOLS.map((t) => t.name))
 
 // ── Agent ─────────────────────────────────────────────────────────────────────
 
@@ -72,9 +72,7 @@ export class WebTestAgent {
     const system = `${SYSTEM_PROMPT}\n\n## Available tools\n${renderToolCatalog()}`
 
     // The conversation the model sees. System is prepended on every turn.
-    const conversation: ChatMessage[] = [
-      { role: 'user', content: goal },
-    ]
+    const conversation: ChatMessage[] = [{ role: 'user', content: goal }]
 
     for (let turn = 0; turn < MAX_TURNS; turn++) {
       const { text, promptTokens, outputTokens } = await chat(
@@ -116,7 +114,12 @@ export class WebTestAgent {
       conversation.push({ role: 'user', content: `Result of ${action.tool}:\n${result}` })
     }
 
-    return { goal, passed: false, summary: `Reached max tool call limit (${MAX_TURNS})`, toolCalls: MAX_TURNS }
+    return {
+      goal,
+      passed: false,
+      summary: `Reached max tool call limit (${MAX_TURNS})`,
+      toolCalls: MAX_TURNS,
+    }
   }
 
   // ── Tool executor ─────────────────────────────────────────────────────────
@@ -170,7 +173,7 @@ export class WebTestAgent {
           break
         }
         case 'snapshot': {
-          result = (await p.locator('body').ariaSnapshot()).slice(0, 3000)
+          result = (await p.locator('body').innerHTML()).slice(0, 3000)
           break
         }
         case 'screenshot': {

@@ -21,7 +21,7 @@ interacting with elements, and asserting expected outcomes.
 ## Reasoning style
 - Always call snapshot() first to understand the current page state.
 - Plan your next action based on what the snapshot reveals — do NOT guess selectors.
-- Prefer ARIA-based selectors: getByRole, getByLabel, getByText, getByPlaceholder.
+- Prefer CSS selectors: id,name etc.
 - If an assertion fails, take a screenshot and report clearly what you observed vs. what was expected.
 - Never navigate away from a page mid-assertion unless the goal requires it.
 
@@ -65,7 +65,6 @@ const ctx: TaskContext = {
 }
 
 export const tasks = {
-
   /** Verify unauthenticated redirect */
   authRedirect: () => `
 Goal: Verify that navigating to ${ctx.baseUrl}/dashboard without being logged in

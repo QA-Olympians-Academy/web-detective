@@ -95,7 +95,7 @@ export class TestHealerAgent {
       }
 
       rounds.push({ round, failures, patched, allPassed: false })
-      if (patched.length === 0) break  // no progress — bail out
+      if (patched.length === 0) break // no progress — bail out
     }
 
     return rounds
@@ -104,11 +104,10 @@ export class TestHealerAgent {
   // ── Test runner ──────────────────────────────────────────────────────────
 
   private runTests(testFile: string): { passed: boolean; failures: TestFailure[] } {
-    const result = spawnSync(
-      'npx',
-      ['playwright', 'test', testFile, '--reporter=json'],
-      { encoding: 'utf-8', stdio: 'pipe' },
-    )
+    const result = spawnSync('npx', ['playwright', 'test', testFile, '--reporter=json'], {
+      encoding: 'utf-8',
+      stdio: 'pipe',
+    })
 
     if (result.status === 0) return { passed: true, failures: [] }
     return { passed: false, failures: this.parseFailures(result.stdout) }
@@ -125,16 +124,11 @@ export class TestHealerAgent {
     const failures: TestFailure[] = []
     for (const suite of report.suites ?? []) {
       for (const spec of suite.specs ?? []) {
-        const isFailed = spec.tests.some(t =>
-          t.results.some(r => r.status === 'failed'),
-        )
+        const isFailed = spec.tests.some((t) => t.results.some((r) => r.status === 'failed'))
         if (!isFailed) continue
 
         const error =
-          spec.tests
-            .flatMap(t => t.results)
-            .find(r => r.error)
-            ?.error?.message ?? ''
+          spec.tests.flatMap((t) => t.results).find((r) => r.error)?.error?.message ?? ''
 
         failures.push({
           file: spec.file,
@@ -153,10 +147,7 @@ export class TestHealerAgent {
     if (!fs.existsSync(filePath)) return ''
     const source = fs.readFileSync(filePath, 'utf-8')
     const escaped = testName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-    const pattern = new RegExp(
-      `test\\((['"\`])${escaped}\\1[\\s\\S]*?\\n\\}\\)`,
-      'm',
-    )
+    const pattern = new RegExp(`test\\((['"\`])${escaped}\\1[\\s\\S]*?\\n\\}\\)`, 'm')
     return source.match(pattern)?.[0] ?? ''
   }
 
@@ -174,7 +165,7 @@ export class TestHealerAgent {
     const page = await context.newPage()
 
     await page.goto(baseUrl, { waitUntil: 'domcontentloaded' })
-    const snapshot = (await page.locator('body').ariaSnapshot()).slice(0, 3000)
+    const snapshot = (await page.locator('body').innerHTML()).slice(0, 3000)
 
     await browser.close()
     return snapshot
@@ -213,7 +204,7 @@ Return the fixed test() block.`,
     )
 
     const fenced = text.match(/```(?:typescript|ts)?\n([\s\S]*?)```/)
-    const block = (fenced ? fenced[1].trim() : text.trim())
+    const block = fenced ? fenced[1].trim() : text.trim()
     return block.startsWith('test(') ? block : null
   }
 }

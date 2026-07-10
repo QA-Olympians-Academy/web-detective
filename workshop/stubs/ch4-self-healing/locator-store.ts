@@ -13,12 +13,12 @@ import * as fs from 'fs'
 import * as path from 'path'
 
 export interface LocatorEntry {
-  key: string             // logical name, e.g. "login.emailInput"
-  selector: string        // current best selector
-  fallbacks: string[]     // ranked alternatives, newest first
-  healCount: number       // how many times this locator has been auto-healed
-  lastVerified: string    // ISO timestamp of last successful use
-  lastHealed?: string     // ISO timestamp of last heal event
+  key: string // logical name, e.g. "login.emailInput"
+  selector: string // current best selector
+  fallbacks: string[] // ranked alternatives, newest first
+  healCount: number // how many times this locator has been auto-healed
+  lastVerified: string // ISO timestamp of last successful use
+  lastHealed?: string // ISO timestamp of last heal event
 }
 
 export class LocatorStore {
@@ -93,7 +93,7 @@ export const WEB_DETECTIVE_LOCATORS: Array<[string, string]> = [
  *
  * Task B — Add two new locators you discover from the live page:
  *   Start the app, open http://localhost:5173/products, run:
- *     const tree = await page.locator('body').ariaSnapshot()
+ *     const tree = await page.locator('body').innerHTML()
  *   Find two elements not yet in WEB_DETECTIVE_LOCATORS (e.g. a column header
  *   or a pagination control) and add them to the seed array above.
  *

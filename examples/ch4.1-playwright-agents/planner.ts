@@ -15,7 +15,7 @@
  *
  * Planner loop:
  *   1. Launch browser, seed login, navigate each route
- *   2. Capture ariaSnapshot of each page (capped for token budget)
+ *   2. Capture innerHTML of each page (capped for token budget)
  *   3. Ask the local model to emit a structured Markdown test plan
  *   4. Save plan to specs/<name>.md
  *
@@ -83,7 +83,7 @@ export class TestPlannerAgent {
       snapshots.push({
         route,
         title: await page.title(),
-        ariaTree: (await page.locator('body').ariaSnapshot()).slice(0, 3000),
+        ariaTree: (await page.locator('body').innerHTML()).slice(0, 3000),
       })
 
       console.log(`  [planner] Snapshotted ${route}`)
@@ -105,7 +105,7 @@ export class TestPlannerAgent {
 
   private async generatePlan(planName: string, snapshots: PageSnapshot[]): Promise<string> {
     const snapshotBlock = snapshots
-      .map(s => `### ${s.route} — ${s.title}\n\`\`\`\n${s.ariaTree}\n\`\`\``)
+      .map((s) => `### ${s.route} — ${s.title}\n\`\`\`\n${s.ariaTree}\n\`\`\``)
       .join('\n\n')
 
     return complete(
@@ -231,7 +231,7 @@ void (async () => {
 
   if (selectorWarnings.length > 0) {
     console.warn('\n  [lint] Selector warnings (review before running):')
-    selectorWarnings.forEach(w => console.warn(`    ! ${w}`))
+    selectorWarnings.forEach((w) => console.warn(`    ! ${w}`))
   }
 
   console.log(`\nTests → ${testPath}`)

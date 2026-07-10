@@ -126,7 +126,9 @@ export class WebTestAgent {
 
   private async loop(goal: string): Promise<Omit<AgentRun, 'durationMs' | 'steps'>> {
     // System prompt = identity + constraints + the live tool catalog.
-    const system = `${SYSTEM_PROMPT}\n\n## Available tools\n${renderToolCatalog()}`
+    // Sync the advertised tool-call budget to the real MAX_TURNS so the model
+    // doesn't quit early (or overrun) when WORKSHOP_MAX_TURNS is customised.
+    const system = `${SYSTEM_PROMPT.replace('{{MAX_TURNS}}', String(MAX_TURNS))}\n\n## Available tools\n${renderToolCatalog()}`
 
     // The conversation the model sees. System is prepended on every turn.
     const conversation: ChatMessage[] = [{ role: 'user', content: goal }]

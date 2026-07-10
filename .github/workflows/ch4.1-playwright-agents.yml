@@ -13,6 +13,11 @@ name: CH4.1 — Playwright Agents
 
 on:
   workflow_dispatch:
+    inputs:
+      model:
+        description: 'Ollama model for LLM-backed steps (WORKSHOP_MODEL)'
+        required: false
+        default: deepseek-r1:1.5b
   pull_request:
     branches: [main]
     paths:
@@ -43,7 +48,7 @@ jobs:
     needs: type-check
     timeout-minutes: 30
     env:
-      WORKSHOP_MODEL: deepseek-r1:1.5b
+      WORKSHOP_MODEL: ${{ github.event.inputs.model || 'deepseek-r1:1.5b' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -140,7 +145,7 @@ jobs:
     if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/solutions') && github.event_name == 'push'
     timeout-minutes: 40
     env:
-      WORKSHOP_MODEL: deepseek-r1:1.5b
+      WORKSHOP_MODEL: ${{ github.event.inputs.model || 'deepseek-r1:1.5b' }}
 
     steps:
       - uses: actions/checkout@v4

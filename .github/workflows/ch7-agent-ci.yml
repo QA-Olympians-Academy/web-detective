@@ -18,6 +18,11 @@ name: CH7 — Agent CI Pipeline
 
 on:
   workflow_dispatch:
+    inputs:
+      model:
+        description: 'Ollama model for LLM-backed steps (WORKSHOP_MODEL)'
+        required: false
+        default: deepseek-r1:1.5b
   pull_request:
     branches: [main]
 
@@ -66,7 +71,7 @@ jobs:
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/solutions'
     timeout-minutes: 30
     env:
-      WORKSHOP_MODEL: deepseek-r1:1.5b
+      WORKSHOP_MODEL: ${{ github.event.inputs.model || 'deepseek-r1:1.5b' }}
 
     strategy:
       fail-fast: false

@@ -64,8 +64,10 @@ jobs:
         run: npx playwright test examples/ch1-foundations/brittle-test.spec.ts --project=chromium --reporter=list
 
       - name: Verify task-graph exports
+        # TODO (Chapter 1): implement this step during the workshop.
+        # It should load examples/ch1-foundations/task-graph.ts and call
+        # describeGraph(loginTaskGraph) to prove the module exports cleanly.
+        # Reference implementation: git checkout solutions
         run: |
-          npx tsx -e "
-          const { describeGraph, loginTaskGraph } = require('./examples/ch1-foundations/task-graph')
-          describeGraph(loginTaskGraph)
-          "
+          echo "TODO (Chapter 1): verify the task-graph module exports"
+          exit 1

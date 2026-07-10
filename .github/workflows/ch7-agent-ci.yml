@@ -99,9 +99,14 @@ jobs:
         run: npx wait-on http://localhost:5173 --timeout 30000
 
       - name: Run agent scenario
+        # TODO (Chapter 7): implement this step during the workshop.
+        # Invoke the CI agent runner for the current matrix scenario:
+        #   npx tsx examples/ch7-agent-ci/agent-runner.ts --scenario <name>
+        # The runner's exit code should decide whether this job passes.
+        # Reference implementation: git checkout solutions
         run: |
-          npx tsx examples/ch7-agent-ci/agent-runner.ts \
-            --scenario ${{ matrix.scenario }}
+          echo "TODO (Chapter 7): run agent-runner.ts for the '${{ matrix.scenario }}' scenario"
+          exit 1
 
       - name: Upload scenario report + traces
         uses: actions/upload-artifact@v4

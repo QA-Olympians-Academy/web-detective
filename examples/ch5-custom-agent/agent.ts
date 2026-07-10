@@ -40,7 +40,17 @@ interface AgentAction {
   input: Record<string, unknown>
 }
 
-const MAX_TURNS = 15
+// Max reasoning turns before the loop gives up. Override with WORKSHOP_MAX_TURNS
+// (e.g. WORKSHOP_MAX_TURNS=30) for longer scenarios or a slower local model.
+const MAX_TURNS = (() => {
+  const raw = process.env.WORKSHOP_MAX_TURNS
+  if (!raw) return 15
+  const n = Number.parseInt(raw, 10)
+  if (!Number.isInteger(n) || n <= 0) {
+    throw new Error(`WORKSHOP_MAX_TURNS must be a positive integer, got "${raw}"`)
+  }
+  return n
+})()
 const TOOL_NAMES = new Set<string>(AGENT_TOOLS.map((t) => t.name))
 
 /**

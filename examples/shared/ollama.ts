@@ -38,29 +38,76 @@ export function stripThinking(text: string): string {
 }
 
 /**
+ * How many times to retry a chat request that fails transiently. Under memory
+ * pressure (e.g. an 8B model on a ~7 GB CI runner) the llama-server subprocess
+ * can segfault mid-request; the `ollama serve` daemon respawns it on the next
+ * call, so a short backoff usually recovers. Override with WORKSHOP_LLM_RETRIES.
+ */
+const MAX_RETRIES = (() => {
+  const raw = process.env.WORKSHOP_LLM_RETRIES
+  if (!raw) return 3
+  const n = Number.parseInt(raw, 10)
+  return Number.isInteger(n) && n >= 0 ? n : 3
+})()
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
+
+/**
+ * True for failures worth retrying: the model server crashed/restarted or the
+ * socket dropped mid-request — transient, not a malformed request on our side.
+ */
+function isTransient(err: unknown): boolean {
+  const status = (err as { status_code?: number } | null)?.status_code
+  if (typeof status === 'number' && status >= 500) return true
+  const msg = err instanceof Error ? err.message : String(err)
+  return /terminated|segmentation|core dumped|fetch failed|ECONNREFUSED|ECONNRESET|socket hang up|premature close/i.test(
+    msg,
+  )
+}
+
+/**
  * Multi-turn chat against the local model. Returns the cleaned assistant text
  * (thinking removed) alongside Ollama's token counts for visibility.
+ *
+ * Retries transient server crashes (see MAX_RETRIES) with exponential backoff so
+ * a single llama-server segfault on a memory-constrained CI runner doesn't fail
+ * the whole run.
  */
 export async function chat(
   messages: ChatMessage[],
   opts: { maxTokens?: number; temperature?: number } = {},
 ): Promise<{ text: string; promptTokens: number; outputTokens: number }> {
   console.log(`[Ollama] ${messages.length} messages → ${MODEL} (temp=${opts.temperature ?? 0.2})`)
-  const res = await ollama.chat({
-    model: MODEL,
-    messages,
-    options: {
-      temperature: opts.temperature ?? 0.2,
-      // DeepSeek-R1 spends tokens "thinking" before answering; too small a budget
-      // yields empty content. Default generously.
-      num_predict: opts.maxTokens ?? 2048,
-    },
-  })
-  return {
-    text: stripThinking(res.message.content),
-    promptTokens: res.prompt_eval_count ?? 0,
-    outputTokens: res.eval_count ?? 0,
+  let lastErr: unknown
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const res = await ollama.chat({
+        model: MODEL,
+        messages,
+        options: {
+          temperature: opts.temperature ?? 0.2,
+          // DeepSeek-R1 spends tokens "thinking" before answering; too small a budget
+          // yields empty content. Default generously.
+          num_predict: opts.maxTokens ?? 2048,
+        },
+      })
+      return {
+        text: stripThinking(res.message.content),
+        promptTokens: res.prompt_eval_count ?? 0,
+        outputTokens: res.eval_count ?? 0,
+      }
+    } catch (err) {
+      lastErr = err
+      if (attempt === MAX_RETRIES || !isTransient(err)) break
+      const backoffMs = 2000 * 2 ** attempt // 2s, 4s, 8s — time for the model to reload
+      const reason = err instanceof Error ? err.message : String(err)
+      console.warn(
+        `  ⚠ LLM request failed (${reason}) — retry ${attempt + 1}/${MAX_RETRIES} in ${backoffMs}ms`,
+      )
+      await sleep(backoffMs)
+    }
   }
+  throw lastErr
 }
 
 /**

@@ -12,7 +12,7 @@
  * Run:  npx tsx examples/ch5-custom-agent/agent.ts
  *   (requires a local Ollama server with deepseek-r1:8b pulled — see setup/local-llm-setup.md)
  */
-import { chromium, type Page } from 'playwright'
+import { chromium, type Page, type Locator } from 'playwright'
 import { AGENT_TOOLS, renderToolCatalog, type ToolName } from './tools'
 import { SYSTEM_PROMPT, tasks } from './prompts'
 import { chat, extractJson, MODEL, type ChatMessage } from '../shared/ollama'
@@ -42,6 +42,48 @@ interface AgentAction {
 
 const MAX_TURNS = 15
 const TOOL_NAMES = new Set<string>(AGENT_TOOLS.map((t) => t.name))
+
+/**
+ * Turn the model's selector string into a real Playwright Locator.
+ *
+ * The agent is told to emit ARIA-first locators (getByRole/getByLabel/…), but a
+ * local LLM will phrase them inconsistently. Rather than feed the raw string to
+ * page.locator() — which only understands CSS and blows up on "getByText(...)"
+ * with "Unexpected token while parsing css selector" — we parse the getBy* form
+ * the model actually produced and call the matching Page method. Anything we
+ * don't recognise falls back to page.locator() so plain CSS still works.
+ */
+export function resolveLocator(page: Page, raw: string): Locator {
+  const s = raw.trim()
+
+  // getByRole('button', { name: 'Sign In', exact: true })
+  const role = s.match(/^getByRole\(\s*['"]([^'"]+)['"]\s*(?:,\s*\{([^}]*)\})?\s*\)$/)
+  if (role) {
+    const opts: { name?: string; exact?: boolean } = {}
+    const body = role[2] ?? ''
+    const name = body.match(/name\s*:\s*['"]([^'"]*)['"]/)
+    if (name) opts.name = name[1]
+    if (/exact\s*:\s*true/.test(body)) opts.exact = true
+    return page.getByRole(role[1] as Parameters<Page['getByRole']>[0], opts)
+  }
+
+  // getByLabel / getByText / getByPlaceholder / getByTestId / getByTitle / getByAltText('...')
+  const single = s.match(/^getBy(Label|Text|Placeholder|TestId|Title|AltText)\(\s*['"]([^'"]*)['"].*\)$/)
+  if (single) {
+    const arg = single[2]
+    switch (single[1]) {
+      case 'Label':       return page.getByLabel(arg)
+      case 'Text':        return page.getByText(arg)
+      case 'Placeholder': return page.getByPlaceholder(arg)
+      case 'TestId':      return page.getByTestId(arg)
+      case 'Title':       return page.getByTitle(arg)
+      case 'AltText':     return page.getByAltText(arg)
+    }
+  }
+
+  // Not a getBy* form — assume a CSS / Playwright selector string.
+  return page.locator(s)
+}
 
 // ── Agent ─────────────────────────────────────────────────────────────────────
 
@@ -137,12 +179,12 @@ export class WebTestAgent {
           break
         }
         case 'click': {
-          await p.locator(input.selector as string).click({ timeout: 5000 })
+          await resolveLocator(p, input.selector as string).click({ timeout: 5000 })
           result = `Clicked: ${input.description}`
           break
         }
         case 'fill': {
-          await p.locator(input.selector as string).fill(input.value as string)
+          await resolveLocator(p, input.selector as string).fill(input.value as string)
           result = `Filled with: ${input.value}`
           break
         }
@@ -156,7 +198,7 @@ export class WebTestAgent {
           break
         }
         case 'assert_visible': {
-          const visible = await p.locator(input.selector as string).isVisible({ timeout: 5000 })
+          const visible = await resolveLocator(p, input.selector as string).isVisible({ timeout: 5000 })
           result = visible
             ? `✓ "${input.description}" is visible`
             : `✗ "${input.description}" is NOT visible`
@@ -164,7 +206,7 @@ export class WebTestAgent {
           break
         }
         case 'assert_text': {
-          const text = await p.locator(input.selector as string).innerText({ timeout: 5000 })
+          const text = await resolveLocator(p, input.selector as string).innerText({ timeout: 5000 })
           const matches = text.includes(input.expected as string)
           result = matches
             ? `✓ Element contains "${input.expected}"`
@@ -173,7 +215,10 @@ export class WebTestAgent {
           break
         }
         case 'snapshot': {
-          result = (await p.locator('body').innerHTML()).slice(0, 3000)
+          // An ARIA tree (roles + accessible names) maps directly onto the
+          // getByRole/getByText/getByLabel locators the agent is asked to emit —
+          // far more useful (and compact) than raw innerHTML for planning.
+          result = `Current URL: ${p.url()}\n\nAccessibility tree:\n${(await p.locator('body').ariaSnapshot()).slice(0, 3000)}`
           break
         }
         case 'screenshot': {

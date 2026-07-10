@@ -50,9 +50,9 @@ export const AGENT_TOOLS: ToolSpec[] = [
   },
   {
     name: 'click',
-    description: 'Click an element. Prefer ARIA-based selectors.',
+    description: 'Click an element.',
     params: [
-      { name: 'selector', description: 'Playwright selector', required: true },
+      { name: 'selector', description: "ARIA locator, e.g. getByRole('button', { name: 'Sign In' }) — see the Selectors rules", required: true },
       { name: 'description', description: 'Human-readable description of what you are clicking', required: true },
     ],
   },
@@ -60,7 +60,7 @@ export const AGENT_TOOLS: ToolSpec[] = [
     name: 'fill',
     description: 'Type text into an input field.',
     params: [
-      { name: 'selector', description: 'Playwright selector for the input', required: true },
+      { name: 'selector', description: "ARIA locator for the input, e.g. getByLabel('Email address') — see the Selectors rules", required: true },
       { name: 'value', description: 'Text to type', required: true },
     ],
   },
@@ -75,7 +75,7 @@ export const AGENT_TOOLS: ToolSpec[] = [
     name: 'assert_visible',
     description: 'Verify an element is visible on the page.',
     params: [
-      { name: 'selector', description: 'Playwright selector', required: true },
+      { name: 'selector', description: "ARIA locator, e.g. getByText('Dashboard') — see the Selectors rules", required: true },
       { name: 'description', description: 'What you expect to see', required: true },
     ],
   },
@@ -83,7 +83,7 @@ export const AGENT_TOOLS: ToolSpec[] = [
     name: 'assert_text',
     description: 'Verify an element contains the expected text.',
     params: [
-      { name: 'selector', description: 'Playwright selector', required: true },
+      { name: 'selector', description: "ARIA locator, e.g. getByRole('heading', { name: 'Dashboard' }) — see the Selectors rules", required: true },
       { name: 'expected', description: 'Text the element must contain', required: true },
     ],
   },

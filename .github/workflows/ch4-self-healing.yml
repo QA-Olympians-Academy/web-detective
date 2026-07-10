@@ -73,34 +73,13 @@ jobs:
           "
 
       - name: Probe selectors against live app
+        # TODO (Chapter 4): implement this step during the workshop.
+        # Log in, then iterate WEB_DETECTIVE_LOCATORS and check each selector is
+        # visible on the live app; fail the job listing any broken selectors.
+        # Reference implementation: git checkout solutions
         run: |
-          npx tsx -e "
-            const { chromium } = require('playwright')
-            const { LocatorStore, WEB_DETECTIVE_LOCATORS } = require('./examples/ch4-self-healing/locator-store')
-            void (async () => {
-              const store = new LocatorStore('./locator-memory.json')
-              const browser = await chromium.launch({ headless: true })
-              const ctx = await browser.newContext({ baseURL: 'http://localhost:5173' })
-              const page = await ctx.newPage()
-              // Log-in first so nav/dashboard selectors are reachable
-              await page.goto('/login')
-              await page.getByLabel('Email address').fill('admin@shop.com')
-              await page.getByLabel('Password').fill('password123')
-              await page.getByRole('button', { name: 'Sign In' }).click()
-              await page.waitForURL('/dashboard')
-              const broken = []
-              for (const [key, selector] of WEB_DETECTIVE_LOCATORS) {
-                const visible = await page.locator(selector.split(', ')[0]).isVisible().catch(() => false)
-                if (!visible) broken.push(key)
-              }
-              await browser.close()
-              if (broken.length > 0) {
-                console.error('Broken selectors:', broken)
-                process.exit(1)
-              }
-              console.log('All', WEB_DETECTIVE_LOCATORS.length, 'selectors healthy')
-            })()
-          "
+          echo "TODO (Chapter 4): probe every registered selector against the live app"
+          exit 1
 
       - name: Upload locator memory
         uses: actions/upload-artifact@v4

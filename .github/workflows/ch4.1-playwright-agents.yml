@@ -70,27 +70,13 @@ jobs:
         run: npx wait-on http://localhost:5173 --timeout 30000
 
       - name: Run Planner — generate test plan
+        # TODO (Chapter 4.1): implement this step during the workshop.
+        # Run TestPlannerAgent.plan() over /login, /dashboard and /products, then
+        # assert the Markdown plan is non-empty and one snapshot per page exists.
+        # Reference implementation: git checkout solutions
         run: |
-          npx tsx -e "
-            const { TestPlannerAgent } = require('./examples/ch4.1-playwright-agents/planner')
-            void (async () => {
-              const planner = new TestPlannerAgent()
-              const result = await planner.plan(
-                'http://localhost:5173',
-                ['/login', '/dashboard', '/products'],
-                'web-detective-ci',
-              )
-              if (!result.markdown || result.markdown.trim().length < 100) {
-                console.error('Plan is too short — planner may have failed')
-                process.exit(1)
-              }
-              if (result.snapshots.length !== 3) {
-                console.error('Expected 3 page snapshots, got', result.snapshots.length)
-                process.exit(1)
-              }
-              console.log('Plan OK —', result.markdown.split('\n').length, 'lines,', result.snapshots.length, 'pages snapshotted')
-            })()
-          "
+          echo "TODO (Chapter 4.1): run the Planner and validate the generated plan"
+          exit 1
 
       - name: Run Generator — emit test code
         run: |

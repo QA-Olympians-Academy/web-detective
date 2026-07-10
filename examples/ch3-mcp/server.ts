@@ -25,7 +25,9 @@ let page: Page | null = null
 
 async function getPage(): Promise<Page> {
   if (!browser) {
-    browser = await chromium.launch({ headless: true })
+    // Use the installed Google Chrome (channel) to match playwright.config.ts,
+    // so no separate bundled-chromium download is needed.
+    browser = await chromium.launch({ headless: true, channel: 'chrome' })
     const context = await browser.newContext({
       baseURL: 'http://localhost:5173',
       viewport: { width: 1280, height: 800 },
@@ -33,6 +35,47 @@ async function getPage(): Promise<Page> {
     page = await context.newPage()
   }
   return page!
+}
+
+/**
+ * Turn an incoming selector string into a real Playwright Locator.
+ *
+ * Clients are told to prefer ARIA locators, so they send forms like
+ * getByRole('button', { name: 'Sign In' }) or getByLabel('Email address').
+ * page.locator() only parses CSS and would throw "Unexpected token" on those,
+ * so we parse the getBy* form and call the matching Page method. Anything we
+ * don't recognise falls back to page.locator() so plain CSS still works.
+ */
+function resolveLocator(p: Page, raw: string): ReturnType<Page['locator']> {
+  const s = raw.trim()
+
+  // getByRole('button', { name: 'Sign In', exact: true })
+  const role = s.match(/^getByRole\(\s*['"]([^'"]+)['"]\s*(?:,\s*\{([^}]*)\})?\s*\)$/)
+  if (role) {
+    const opts: { name?: string; exact?: boolean } = {}
+    const body = role[2] ?? ''
+    const name = body.match(/name\s*:\s*['"]([^'"]*)['"]/)
+    if (name) opts.name = name[1]
+    if (/exact\s*:\s*true/.test(body)) opts.exact = true
+    return p.getByRole(role[1] as Parameters<Page['getByRole']>[0], opts)
+  }
+
+  // getByLabel / getByText / getByPlaceholder / getByTestId / getByTitle / getByAltText('...')
+  const single = s.match(/^getBy(Label|Text|Placeholder|TestId|Title|AltText)\(\s*['"]([^'"]*)['"].*\)$/)
+  if (single) {
+    const arg = single[2]
+    switch (single[1]) {
+      case 'Label':       return p.getByLabel(arg)
+      case 'Text':        return p.getByText(arg)
+      case 'Placeholder': return p.getByPlaceholder(arg)
+      case 'TestId':      return p.getByTestId(arg)
+      case 'Title':       return p.getByTitle(arg)
+      case 'AltText':     return p.getByAltText(arg)
+    }
+  }
+
+  // Not a getBy* form — assume a CSS / Playwright selector string.
+  return p.locator(s)
 }
 
 // ── Tool definitions ──────────────────────────────────────────────────────────
@@ -55,7 +98,7 @@ const tools: Tool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        selector: { type: 'string', description: 'Playwright selector for the element to click' },
+        selector: { type: 'string', description: "ARIA locator, e.g. getByRole('button', { name: 'Sign In' }); CSS also accepted" },
       },
       required: ['selector'],
     },
@@ -66,7 +109,7 @@ const tools: Tool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        selector: { type: 'string', description: 'Playwright selector for the input' },
+        selector: { type: 'string', description: "ARIA locator, e.g. getByLabel('Email address'); CSS also accepted" },
         value: { type: 'string', description: 'Text to type' },
       },
       required: ['selector', 'value'],
@@ -111,7 +154,7 @@ const tools: Tool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        selector: { type: 'string', description: 'Playwright selector to check visibility for' },
+        selector: { type: 'string', description: "ARIA locator, e.g. getByText('Dashboard'); CSS also accepted" },
       },
       required: ['selector'],
     },
@@ -140,19 +183,22 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case 'browser_click': {
-        await p.locator(args.selector as string).click()
+        await resolveLocator(p, args.selector as string).click()
         return { content: [{ type: 'text', text: `Clicked: ${args.selector}` }] }
       }
 
       case 'browser_fill': {
-        await p.locator(args.selector as string).fill(args.value as string)
+        await resolveLocator(p, args.selector as string).fill(args.value as string)
         return {
           content: [{ type: 'text', text: `Filled "${args.selector}" with "${args.value}"` }],
         }
       }
 
       case 'browser_snapshot': {
-        const tree = await p.locator('body').innerHTML()
+        // The tool is documented as returning the accessibility tree — do that
+        // (roles + names) rather than raw innerHTML, so clients can derive the
+        // getByRole/getByText locators the other tools accept.
+        const tree = await p.locator('body').ariaSnapshot()
         return { content: [{ type: 'text', text: tree }] }
       }
 

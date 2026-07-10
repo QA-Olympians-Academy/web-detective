@@ -9,6 +9,7 @@
 name: CH6 — Skills Validation
 
 on:
+  workflow_dispatch:   # allow manual runs on this start branch during the workshop
   # push:
   #   branches: [main]
   #   paths:

@@ -23,6 +23,10 @@ on:
         description: 'Ollama model for LLM-backed steps (WORKSHOP_MODEL)'
         required: false
         default: deepseek-r1:1.5b
+      max_turns:
+        description: 'Max agent reasoning turns before giving up (WORKSHOP_MAX_TURNS)'
+        required: false
+        default: '15'
   pull_request:
     branches: [main]
 
@@ -72,6 +76,7 @@ jobs:
     timeout-minutes: 30
     env:
       WORKSHOP_MODEL: ${{ github.event.inputs.model || 'deepseek-r1:1.5b' }}
+      WORKSHOP_MAX_TURNS: ${{ github.event.inputs.max_turns || '15' }}
 
     strategy:
       fail-fast: false

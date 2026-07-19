@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/logo.png" alt="QA Olympians Academy" width="220">
+  <img src="docs/logo.png" alt="Playwright Web Automation in the Agentic Era" width="100%">
 </p>
 
 # web-detective

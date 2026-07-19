@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/logo.png" alt="QA Olympians Academy" width="220">
+</p>
+
 # web-detective
 
 A React + TypeScript ecommerce app used as the target application for the

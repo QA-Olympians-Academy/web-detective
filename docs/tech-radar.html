@@ -1,0 +1,255 @@
+<style>
+  :root{
+    --bg:#f5f7fb; --panel:#ffffff; --ink:#0e1830; --muted:#55627a;
+    --hair:rgba(12,22,45,.12); --hair-soft:rgba(12,22,45,.06);
+    --accent:#0e9e6e;
+    --q0:#0e9e6e; --q1:#2563eb; --q2:#b7791f; --q3:#9333ea;
+    --shadow:0 1px 2px rgba(12,22,45,.06),0 8px 24px rgba(12,22,45,.08);
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#080d1c; --panel:#0e1830; --ink:#eff2fa; --muted:#8899bb;
+      --hair:rgba(255,255,255,.12); --hair-soft:rgba(255,255,255,.05);
+      --accent:#00d48e;
+      --q0:#00d48e; --q1:#4ea1ff; --q2:#e0a82e; --q3:#c57bff;
+      --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.45);
+    }
+  }
+  :root[data-theme="light"]{
+    --bg:#f5f7fb; --panel:#ffffff; --ink:#0e1830; --muted:#55627a;
+    --hair:rgba(12,22,45,.12); --hair-soft:rgba(12,22,45,.06);
+    --accent:#0e9e6e; --q0:#0e9e6e; --q1:#2563eb; --q2:#b7791f; --q3:#9333ea;
+    --shadow:0 1px 2px rgba(12,22,45,.06),0 8px 24px rgba(12,22,45,.08);
+  }
+  :root[data-theme="dark"]{
+    --bg:#080d1c; --panel:#0e1830; --ink:#eff2fa; --muted:#8899bb;
+    --hair:rgba(255,255,255,.12); --hair-soft:rgba(255,255,255,.05);
+    --accent:#00d48e; --q0:#00d48e; --q1:#4ea1ff; --q2:#e0a82e; --q3:#c57bff;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.45);
+  }
+
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
+    line-height:1.55;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1180px;margin:0 auto;padding:40px 24px 72px;}
+
+  header.masthead{display:flex;flex-wrap:wrap;align-items:baseline;gap:12px 18px;
+    padding-bottom:20px;border-bottom:1px solid var(--hair);margin-bottom:8px;}
+  .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--accent);font-weight:600;}
+  h1{font-size:clamp(26px,4vw,40px);line-height:1.08;margin:0;font-weight:750;
+    letter-spacing:-.02em;text-wrap:balance;flex:1 1 320px;}
+  .sub{color:var(--muted);font-size:15px;max-width:64ch;margin:10px 0 0;flex-basis:100%;}
+
+  .layout{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:34px;
+    align-items:start;margin-top:30px;}
+  @media (max-width:920px){.layout{grid-template-columns:1fr}}
+
+  figure.radar{margin:0;background:
+      radial-gradient(circle at 50% 48%,var(--hair-soft),transparent 70%);
+    border-radius:18px;}
+  svg{width:100%;height:auto;display:block;overflow:visible;}
+
+  .ringlabel{fill:var(--muted);font-family:var(--mono);font-size:12px;
+    letter-spacing:.14em;text-transform:uppercase;}
+  .quadlabel{font-family:var(--sans);font-weight:700;font-size:16px;letter-spacing:-.01em;}
+  .gridline{stroke:var(--hair);fill:none;}
+  .spoke{stroke:var(--hair);}
+  .blip{cursor:pointer;transition:transform .12s ease;transform-origin:center;transform-box:fill-box;}
+  .blip circle{stroke:var(--panel);stroke-width:2;}
+  .blip text{fill:#fff;font-family:var(--mono);font-size:11px;font-weight:600;
+    text-anchor:middle;dominant-baseline:central;pointer-events:none;}
+  .blip.dim{opacity:.2;}
+  .blip.hot{transform:scale(1.55);}
+
+  aside{position:sticky;top:24px;display:flex;flex-direction:column;gap:16px;}
+  .legend-note{font-size:13px;color:var(--muted);margin:0;}
+  .qgroup{background:var(--panel);border:1px solid var(--hair);border-radius:14px;
+    padding:14px 16px;box-shadow:var(--shadow);}
+  .qhead{display:flex;align-items:center;gap:9px;margin-bottom:9px;}
+  .qdot{width:11px;height:11px;border-radius:3px;flex:none;}
+  .qname{font-weight:700;font-size:14px;letter-spacing:-.01em;}
+  ol.items{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:3px;}
+  ol.items li{display:flex;gap:9px;align-items:baseline;font-size:13px;
+    padding:3px 6px;border-radius:7px;cursor:default;transition:background .12s;}
+  ol.items li:hover{background:var(--hair-soft);}
+  .num{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--panel);
+    border-radius:5px;min-width:18px;height:18px;padding:0 4px;
+    display:inline-flex;align-items:center;justify-content:center;flex:none;
+    transform:translateY(2px);}
+  .itxt{color:var(--ink);}
+  .iring{color:var(--muted);font-family:var(--mono);font-size:10.5px;
+    letter-spacing:.04em;text-transform:uppercase;margin-left:auto;padding-left:8px;flex:none;}
+
+  .rings-key{display:flex;flex-wrap:wrap;gap:14px 20px;margin:22px 0 0;
+    padding-top:18px;border-top:1px solid var(--hair);font-size:13px;color:var(--muted);}
+  .rings-key b{color:var(--ink);font-weight:650;}
+  .rings-key span{max-width:16ch;}
+
+  #tip{position:fixed;pointer-events:none;opacity:0;transition:opacity .1s;
+    background:var(--ink);color:var(--bg);font-size:12.5px;padding:7px 10px;
+    border-radius:8px;max-width:240px;box-shadow:var(--shadow);z-index:9;
+    font-family:var(--sans);line-height:1.4;}
+  #tip .tq{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;
+    text-transform:uppercase;opacity:.7;display:block;margin-top:2px;}
+</style>
+
+<div class="wrap">
+  <header class="masthead">
+    <span class="eyebrow">QA Olympians Academy · Tech Radar</span>
+    <h1>Rise of the Web Agents — the web-detective stack</h1>
+    <p class="sub">The technology behind agentic test automation: Playwright driven
+      by a local LLM, an MCP server, self-healing selectors, a custom reasoning
+      agent, and an agentic CI pipeline. Rings are our recommendation; color marks
+      the quadrant. Hover a blip for detail.</p>
+  </header>
+
+  <div class="layout">
+    <figure class="radar">
+      <svg id="radar" viewBox="0 0 940 940" role="img"
+           aria-label="Technology radar with four rings (Adopt, Trial, Assess, Hold) and four quadrants."></svg>
+    </figure>
+    <aside id="legend" aria-label="Radar legend"></aside>
+  </div>
+
+  <div class="rings-key">
+    <span><b>Adopt</b> — proven; use by default.</span>
+    <span><b>Trial</b> — worth pursuing on real work.</span>
+    <span><b>Assess</b> — promising; explore deliberately.</span>
+    <span><b>Hold</b> — proceed with caution / avoid.</span>
+  </div>
+</div>
+
+<div id="tip" role="status" aria-live="polite"></div>
+
+<script>
+  const RINGS = ["Adopt","Trial","Assess","Hold"];
+  const QUAD = [
+    {name:"Techniques",                    key:0, a0:180, corner:"tl"},
+    {name:"Tools",                         key:1, a0:270, corner:"tr"},
+    {name:"Platforms & Infra",             key:2, a0:0,   corner:"br"},
+    {name:"Languages, Frameworks & Models",key:3, a0:90,  corner:"bl"},
+  ];
+  // [quadrant, ring, label]  ring 0=Adopt … 3=Hold
+  const DATA = [
+    // Techniques
+    [0,0,"ARIA-first selectors (getByRole/Label/Text)"],[0,0,"Page Object Model"],
+    [0,0,"Auto-waiting assertions"],[0,0,"Trace-based debugging"],
+    [0,1,"Self-healing selectors (LocatorStore)"],[0,1,"Planner → Generator → Healer"],
+    [0,1,"Observe-Plan-Act-Verify agent loop"],[0,1,"Prompt-based JSON action protocol"],
+    [0,1,"Reusable testing Skills"],
+    [0,2,"AI test plan → runnable spec"],[0,2,"Agentic CI scenarios (critical vs warn)"],
+    [0,2,"MCP-exposed browser tools"],
+    [0,3,"CSS / XPath selectors"],[0,3,"Hard-coded sleeps / waits"],
+    // Tools
+    [1,0,"Playwright"],[1,0,"Playwright Trace Viewer"],[1,0,"Ollama"],[1,0,"Claude Code"],
+    [1,1,"MCP server (@modelcontextprotocol/sdk)"],[1,1,"Playwright MCP client"],
+    [1,1,"tsx runner"],[1,1,"Claude Code Skills (/pw-*)"],
+    [1,2,"Playwright Agents (planner/healer)"],[1,2,"LLM-ranked self-healer"],
+    [1,3,"ts-node for ESM examples"],[1,3,"Provider tool-schemas w/ DeepSeek-R1"],
+    // Platforms & Infra
+    [2,0,"GitHub Actions (per-chapter workflows)"],[2,0,"Local Vite dev server"],
+    [2,0,"Ollama local inference (:11434)"],
+    [2,1,"paths-filtered CI triggers"],[2,1,"Agentic CI pipeline (Ch7)"],
+    [2,2,"GPU / self-hosted runners"],[2,2,"API-key-gated agent jobs"],
+    [2,3,"Cloud LLM API keys for core labs"],
+    // Languages, Frameworks & Models
+    [3,0,"TypeScript (ES2022)"],[3,0,"React + Vite"],[3,0,"Node ≥ 20 (ESM)"],
+    [3,1,"DeepSeek-R1 8b via Ollama"],[3,1,"WORKSHOP_MODEL override"],
+    [3,2,"qwen2.5-coder:7b (stronger JSON)"],[3,2,"llama3.1 (self-healer)"],
+    [3,3,"DeepSeek-R1 for the healing loop"],
+  ];
+
+  const CX=470, CY=470, R=430;
+  const BOUND=[0,118,222,326,430];
+  const QCOLOR=["var(--q0)","var(--q1)","var(--q2)","var(--q3)"];
+  const SVGNS="http://www.w3.org/2000/svg";
+  const svg=document.getElementById("radar");
+  const el=(n,a={})=>{const e=document.createElementNS(SVGNS,n);
+    for(const k in a)e.setAttribute(k,a[k]);return e;};
+  const rad=d=>d*Math.PI/180;
+
+  BOUND.slice(1).forEach((r,i)=>svg.appendChild(el("circle",
+    {cx:CX,cy:CY,r,class:"gridline","stroke-width":i===3?1.5:1})));
+  svg.appendChild(el("line",{x1:CX-R,y1:CY,x2:CX+R,y2:CY,class:"spoke"}));
+  svg.appendChild(el("line",{x1:CX,y1:CY-R,x2:CX,y2:CY+R,class:"spoke"}));
+
+  RINGS.forEach((name,i)=>{
+    const rMid=(BOUND[i]+BOUND[i+1])/2;
+    const t=el("text",{x:CX+6,y:CY-rMid,class:"ringlabel","text-anchor":"start"});
+    t.textContent=name; svg.appendChild(t);
+  });
+
+  const CORNERS={tl:[CX-R,CY-R-14,"start"],tr:[CX+R,CY-R-14,"end"],
+                 br:[CX+R,CY+R+26,"end"],bl:[CX-R,CY+R+26,"start"]};
+  QUAD.forEach(q=>{
+    const c=CORNERS[q.corner];
+    const t=el("text",{x:c[0],y:c[1],class:"quadlabel","text-anchor":c[2],fill:QCOLOR[q.key]});
+    t.textContent=q.name; svg.appendChild(t);
+  });
+
+  const legend=document.getElementById("legend");
+  legend.insertAdjacentHTML("beforeend",
+    '<p class="legend-note">'+DATA.length+' technologies across 4 quadrants. '+
+    'Hover the list to locate a blip.</p>');
+
+  const byQuad=[[],[],[],[]];
+  DATA.forEach((d,idx)=>byQuad[d[0]].push({idx,ring:d[1],label:d[2]}));
+  const blipEls={};
+
+  QUAD.forEach(q=>{
+    const items=byQuad[q.key];
+    items.forEach((it,i)=>it.num=i+1);
+    [0,1,2,3].forEach(ring=>{
+      const inRing=items.filter(it=>it.ring===ring);
+      const n=inRing.length;
+      inRing.forEach((it,i)=>{
+        const ang=q.a0+(90/(n+1))*(i+1);
+        const band=[BOUND[ring],BOUND[ring+1]];
+        const frac= n>3 ? (0.30+0.5*(i%2)) : 0.5;
+        const rr=band[0]+(band[1]-band[0])*(ring===0?0.55:frac);
+        const x=CX+rr*Math.cos(rad(ang)), y=CY+rr*Math.sin(rad(ang));
+        const g=el("g",{class:"blip",tabindex:"0",role:"listitem",
+          "aria-label":it.label+" — "+q.name+", "+RINGS[ring]});
+        g.appendChild(el("circle",{cx:x,cy:y,r:12,fill:QCOLOR[q.key]}));
+        const tx=el("text",{x,y}); tx.textContent=it.num; g.appendChild(tx);
+        svg.appendChild(g); blipEls[q.key+"-"+it.num]=g;
+        const show=(ev)=>{
+          const tip=document.getElementById("tip");
+          tip.innerHTML=it.label+'<span class="tq">'+q.name+' · '+RINGS[ring]+'</span>';
+          tip.style.opacity=1;
+          const px=(ev.clientX||innerWidth/2)+14, py=(ev.clientY||120)+14;
+          tip.style.left=Math.min(px,innerWidth-250)+"px"; tip.style.top=py+"px";
+          g.classList.add("hot");
+        };
+        const hide=()=>{document.getElementById("tip").style.opacity=0;g.classList.remove("hot");};
+        g.addEventListener("mousemove",show); g.addEventListener("mouseenter",show);
+        g.addEventListener("mouseleave",hide);
+        g.addEventListener("focus",()=>show({})); g.addEventListener("blur",hide);
+      });
+    });
+    const div=document.createElement("div");
+    div.className="qgroup";
+    let html='<div class="qhead"><span class="qdot" style="background:'+QCOLOR[q.key]+
+      '"></span><span class="qname">'+q.name+'</span></div><ol class="items">';
+    items.forEach(it=>{
+      html+='<li data-b="'+q.key+'-'+it.num+'"><span class="num" style="background:'+
+        QCOLOR[q.key]+'">'+it.num+'</span><span class="itxt">'+it.label+
+        '</span><span class="iring">'+RINGS[it.ring]+'</span></li>';
+    });
+    html+="</ol>"; div.innerHTML=html; legend.appendChild(div);
+  });
+
+  legend.querySelectorAll("li[data-b]").forEach(li=>{
+    const g=blipEls[li.dataset.b];
+    li.addEventListener("mouseenter",()=>{
+      Object.values(blipEls).forEach(b=>b.classList.add("dim"));
+      g.classList.remove("dim"); g.classList.add("hot");
+    });
+    li.addEventListener("mouseleave",()=>{
+      Object.values(blipEls).forEach(b=>{b.classList.remove("dim");b.classList.remove("hot");});
+    });
+  });
+</script>

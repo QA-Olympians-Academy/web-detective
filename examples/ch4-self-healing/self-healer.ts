@@ -106,7 +106,7 @@ export class SelfHealingAgent {
     brokenSelector: string,
     accessibilityTree: string,
   ): Promise<string[]> {
-    const system =  const system = `You are a Playwright selector expert. You are given a broken selector and the
+    const system = `You are a Playwright selector expert. You are given a broken selector and the
 CURRENT ARIA accessibility tree of the page (YAML: each line is "<role> \\"<accessible name>\\"").
 The broken selector is OUT OF DATE — the element's attributes have changed. Your job is to
 locate the same element in the tree and return 3-5 working Playwright selectors for it.

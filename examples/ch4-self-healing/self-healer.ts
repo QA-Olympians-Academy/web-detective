@@ -106,15 +106,23 @@ export class SelfHealingAgent {
     brokenSelector: string,
     accessibilityTree: string,
   ): Promise<string[]> {
-    const system = `You are a Playwright selector expert. Given a broken CSS/ARIA selector and the
-current html snapshot of a web page, return 3-5 alternative Playwright selectors
-that would locate the same element.
+    const system =  const system = `You are a Playwright selector expert. You are given a broken selector and the
+CURRENT ARIA accessibility tree of the page (YAML: each line is "<role> \\"<accessible name>\\"").
+The broken selector is OUT OF DATE — the element's attributes have changed. Your job is to
+locate the same element in the tree and return 3-5 working Playwright selectors for it.
 
 Rules:
-- Prefer CSS selectors: id,name,class,attribute,ARIA,structural
-- Fall back to semantic CSS classes (not structural nth-child paths)
-- Return ONLY a JSON array of selector strings, no explanation
-- Order from most stable (ARIA) to least stable (CSS)`
+- Derive the selector from the ARIA TREE, not from the broken selector. The accessible name
+  almost certainly changed — read the current "<role> \\"<name>\\"" line and use THAT name.
+- Prefer role= selectors: role=textbox[name="..."], role=button[name="..."], role=link[name="..."].
+- A role= selector accepts ONLY these attributes: name, checked, disabled, expanded,
+  include-hidden, level, pressed, selected. NEVER use placeholder, id, type, class, or href
+  inside role=[...]. Those are not valid and will throw.
+- Never mix CSS and role= in one selector (e.g. "label + role=textbox" is invalid).
+- If you fall back to CSS, use a single valid CSS selector (semantic class or attribute),
+  never a role= fragment.
+- Return ONLY a JSON array of selector strings, no explanation.
+- Order from most stable (ARIA role=name) to least stable (CSS).`
 
     const text = await complete(
       system,
